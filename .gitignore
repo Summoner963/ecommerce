@@ -1,15 +1,28 @@
+# Secrets
 .env
-.venv
-venv/
-env/
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Django
 db.sqlite3
-/media
-/staticfiles
+/media/
+/staticfiles/
+
+# OS
 .DS_Store
 Thumbs.db
+
+# IDE
 .vscode/
 .idea/
+
+# Logs
 *.log
