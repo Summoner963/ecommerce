@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+<body>
+    <h1>Checkout</h1>
+    <button id="checkout-button">Pay with Stripe</button>
+
+    <script>
+        const stripe = Stripe('{{ stripe_publishable_key }}');
+
+        document.getElementById('checkout-button').addEventListener('click', function () {
+            fetch('/create-checkout-session/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.id) {
+                    stripe.redirectToCheckout({ sessionId: data.id });
+                } else {
+                    alert('Something went wrong');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    </script>
+</body>
+</html>

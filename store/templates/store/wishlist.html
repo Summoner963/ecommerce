@@ -1,0 +1,514 @@
+{% extends "base.html" %}
+{% load static %}
+{% load store_extras %}
+
+{% block extra_css %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
+
+  :root {
+    --primary: #ff7d1a;
+    --primary-light: #fff4ec;
+    --primary-mid: #ffe0c4;
+    --text-dark: #1a1a1a;
+    --text-mid: #555;
+    --text-light: #999;
+    --border: #f0f0f0;
+    --card-bg: #fff;
+    --page-bg: #fafafa;
+    --radius: 14px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.07);
+    --shadow-hover: 0 12px 36px rgba(0,0,0,0.13);
+  }
+
+  .wishlist-page {
+    background: var(--page-bg);
+    min-height: 60vh;
+    padding: 3rem 0 5rem;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* ── Header ── */
+  .wishlist-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 2.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .wishlist-header-left { display: flex; flex-direction: column; gap: 4px; }
+  .wishlist-eyebrow {
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 2.5px;
+    text-transform: uppercase; color: var(--primary); margin: 0;
+  }
+  .wishlist-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem; color: var(--text-dark); margin: 0; line-height: 1.1;
+  }
+  .wishlist-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--primary-light); color: var(--primary);
+    font-size: 0.82rem; font-weight: 700; padding: 6px 14px;
+    border-radius: 30px; border: 1px solid var(--primary-mid);
+    white-space: nowrap; align-self: flex-start; margin-top: 6px;
+  }
+  .wishlist-badge svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  /* ── Grid ── */
+  .wishlist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.5rem;
+  }
+
+  /* ── Card ── */
+  .wishlist-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    animation: cardIn 0.35s ease both;
+  }
+  .wishlist-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-4px);
+  }
+
+  /* ── KEY FIX: aspect-ratio instead of fixed height ──
+     Uses a 3:4 portrait ratio — matches typical product photography.
+     The image area grows/shrinks with the card width, never crops.     */
+  .wishlist-card-image {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 4;     /* portrait rectangle, scales with card width */
+    overflow: hidden;
+    background: #f7f7f7;
+    flex-shrink: 0;           /* never squish the image area */
+  }
+  .wishlist-card-image a {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .wishlist-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;      /* never crop — show full product */
+    object-position: center;
+    transition: transform 0.4s ease;
+    display: block;
+  }
+  .wishlist-card:hover .wishlist-card-image img { transform: scale(1.05); }
+
+  /* Stock badge */
+  .stock-badge {
+    position: absolute; top: 12px; left: 12px;
+    font-size: 0.68rem; font-weight: 800; letter-spacing: 1px;
+    text-transform: uppercase; padding: 4px 10px;
+    border-radius: 20px; z-index: 3;
+  }
+  .stock-badge.out { background: #e53e3e; color: #fff; }
+  .stock-badge.low { background: #f6ad55; color: #fff; }
+
+  /* Hover overlay */
+  .wishlist-card-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 55%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    display: flex; align-items: flex-end;
+    padding: 14px; gap: 8px; z-index: 4;
+  }
+  .wishlist-card:hover .wishlist-card-overlay { opacity: 1; }
+
+  .overlay-btn {
+    flex: 1; padding: 9px 0; border: none;
+    border-radius: 8px; font-size: 0.78rem; font-weight: 700;
+    cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.3px; font-family: inherit;
+  }
+  .overlay-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .overlay-btn.add-to-cart { background: var(--primary); color: #fff; }
+  .overlay-btn.add-to-cart:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+  .overlay-btn.remove-from-wishlist {
+    background: rgba(255,255,255,0.15); color: #fff;
+    border: 1.5px solid rgba(255,255,255,0.4);
+    backdrop-filter: blur(4px);
+    flex: 0 0 auto; padding: 9px 12px;
+  }
+
+  /* Corner remove (always visible) */
+  .remove-btn-corner {
+    position: absolute; top: 10px; right: 10px;
+    width: 30px; height: 30px;
+    background: rgba(255,255,255,0.92); border: none; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 5;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    transition: background 0.15s, transform 0.15s;
+    color: #999; font-size: 1.1rem; line-height: 1;
+  }
+  .remove-btn-corner:hover { background: #fff; color: #e53e3e; transform: scale(1.1); }
+
+  /* ── Card details ── */
+  .wishlist-card-details {
+    padding: 14px 16px 16px;
+    display: flex; flex-direction: column; gap: 8px; flex: 1;
+  }
+  .wishlist-card-style {
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--primary); margin: 0;
+  }
+  .wishlist-card-name {
+    margin: 0; font-size: 0.95rem; font-weight: 600; line-height: 1.35;
+  }
+  .wishlist-card-name a {
+    color: var(--text-dark); text-decoration: none; transition: color 0.15s;
+  }
+  .wishlist-card-name a:hover { color: var(--primary); }
+  .wishlist-card-price {
+    display: flex; align-items: center; gap: 8px; margin-top: auto;
+    flex-wrap: wrap;
+  }
+  .price-current { font-size: 1.05rem; font-weight: 800; color: var(--text-dark); }
+  .price-original { font-size: 0.85rem; color: var(--text-light); text-decoration: line-through; }
+  .price-discount {
+    font-size: 0.72rem; font-weight: 800; color: #22863a;
+    background: #e6f4ea; padding: 2px 7px; border-radius: 20px;
+  }
+  .wishlist-card-rating {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 0.78rem; color: var(--text-light);
+  }
+  .wishlist-card-rating ion-icon { font-size: 0.75rem; color: #f6ad55; }
+
+  /* ── Empty state ── */
+  .empty-wishlist {
+    text-align: center; padding: 5rem 2rem;
+    background: var(--card-bg); border-radius: var(--radius);
+    box-shadow: var(--shadow); max-width: 460px; margin: 0 auto;
+  }
+  .empty-heart {
+    width: 72px; height: 72px; background: var(--primary-light);
+    border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; margin: 0 auto 1.5rem;
+  }
+  .empty-heart ion-icon { font-size: 2rem; color: var(--primary); }
+  .empty-wishlist h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem; color: var(--text-dark); margin: 0 0 0.5rem;
+  }
+  .empty-wishlist p { color: var(--text-mid); font-size: 0.92rem; margin: 0 0 2rem; }
+  .btn-shop {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--primary); color: #fff; font-weight: 700;
+    font-size: 0.88rem; padding: 12px 26px; border-radius: 10px;
+    text-decoration: none; transition: opacity 0.15s, transform 0.1s;
+    box-shadow: 0 4px 14px rgba(255,125,26,0.35);
+  }
+  .btn-shop:hover { opacity: 0.9; transform: translateY(-1px); }
+
+  /* ── Animations ── */
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  {% for i in "123456789" %}
+  .wishlist-card:nth-child({{ forloop.counter }}) { animation-delay: {{ forloop.counter0 }}00ms; }
+  {% endfor %}
+
+  .wishlist-card.removing {
+    animation: cardOut 0.3s ease forwards;
+    pointer-events: none;
+  }
+  @keyframes cardOut {
+    to { opacity: 0; transform: scale(0.92); }
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .wishlist-grid {
+      /* 2 columns on phones — cards are narrower so aspect-ratio keeps them portrait */
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    .wishlist-card-details { padding: 10px 12px 12px; gap: 5px; }
+    .wishlist-card-name { font-size: 0.85rem; }
+    .price-current { font-size: 0.95rem; }
+    .wishlist-title { font-size: 1.6rem; }
+  }
+
+  @media (max-width: 380px) {
+    .wishlist-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="wishlist-page">
+  <div class="container">
+
+    <!-- Header -->
+    <div class="wishlist-header">
+      <div class="wishlist-header-left">
+        <p class="wishlist-eyebrow">Your Collection</p>
+        <h1 class="wishlist-title">Wishlist</h1>
+      </div>
+      <span class="wishlist-badge" id="wishlist-badge-count">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        <span id="wl-count-num">{{ wishlist_count }}</span> item{{ wishlist_count|pluralize }}
+      </span>
+    </div>
+
+    {% if wishlist_products %}
+    <div class="wishlist-grid" id="wishlist-grid">
+      {% for product in wishlist_products %}
+
+      <div class="wishlist-card" data-product-id="{{ product.id }}">
+
+        <!-- Corner remove (always visible) -->
+        <button class="remove-btn-corner remove-from-wishlist"
+                data-product-id="{{ product.id }}"
+                title="Remove from wishlist">×</button>
+
+        <!-- Image + overlay -->
+        <div class="wishlist-card-image">
+          <a href="{% url 'store:product' product.slug %}">
+            <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+          </a>
+
+          <!-- Overlay with Add to Cart + Remove -->
+          {% comment %} <div class="wishlist-card-overlay">
+            <button class="overlay-btn add-to-cart"
+                    data-product-id="{{ product.id }}"
+                    data-url="{% url 'store:add_to_cart' product.id %}">
+              Add to Cart
+            </button>
+            <button class="overlay-btn remove-from-wishlist"
+                    data-product-id="{{ product.id }}"
+                    title="Remove from wishlist">♡</button>
+          </div> {% endcomment %}
+        </div>
+
+        <!-- Details -->
+        <div class="wishlist-card-details">
+          <p class="wishlist-card-style">{{ product.style.name }}</p>
+          <h3 class="wishlist-card-name">
+            <a href="{% url 'store:product' product.slug %}">{{ product.name }}</a>
+          </h3>
+{% comment %} 
+          {% with avg=product.avg_rating|default:0 %}
+          {% if product.reviews.count %}
+          <div class="wishlist-card-rating">
+            {% for i in "12345" %}
+            <ion-icon name="{% if forloop.counter <= avg %}star{% else %}star-outline{% endif %}"></ion-icon>
+            {% endfor %}
+            <span>({{ product.reviews.count }})</span>
+          </div>
+          {% endif %}
+          {% endwith %} {% endcomment %}
+
+          <div class="wishlist-card-price">
+            <span class="price-current">Rs.{{ product.price }}</span>
+            {% if product.original_price and product.price < product.original_price %}
+            <span class="price-original">Rs.{{ product.original_price }}</span>
+            {% with diff=product.original_price|add:"-0" %}
+            {% endwith %}
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="empty-wishlist">
+      <div class="empty-heart"><ion-icon name="heart-outline"></ion-icon></div>
+      <h2>Nothing saved yet</h2>
+      <p>Browse our products and tap the heart icon to save items you love.</p>
+      <a href="{% url 'store:home' %}" class="btn-shop">
+        <ion-icon name="storefront-outline"></ion-icon>
+        Start Shopping
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  function getCsrf() {
+    const m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? m[1] : '';
+  }
+
+  function updateBadgeCount(delta) {
+    const numEl = document.getElementById('wl-count-num');
+    const badge = document.getElementById('wishlist-badge-count');
+    if (!numEl) return;
+    const n = Math.max(0, parseInt(numEl.textContent) + delta);
+    numEl.textContent = n;
+    // Rebuild badge text preserving the SVG
+    const svg = badge.querySelector('svg');
+    badge.textContent = '';
+    badge.appendChild(svg);
+    badge.insertAdjacentHTML('beforeend',
+      ' <span id="wl-count-num">' + n + '</span> item' + (n !== 1 ? 's' : ''));
+    // Sync navbar counts
+    document.querySelectorAll('#wishlist-count, #wishlist-count-mobile').forEach(function(el) {
+      el.textContent = n;
+    });
+  }
+
+  function showEmpty() {
+    const grid = document.getElementById('wishlist-grid');
+    if (grid) {
+      grid.outerHTML =
+        '<div class="empty-wishlist">' +
+        '<div class="empty-heart"><ion-icon name="heart-outline"></ion-icon></div>' +
+        '<h2>Nothing saved yet</h2>' +
+        '<p>Browse our products and tap the heart icon to save items you love.</p>' +
+        '<a href="/" class="btn-shop"><ion-icon name="storefront-outline"></ion-icon> Start Shopping</a>' +
+        '</div>';
+    }
+  }
+
+  // ── Remove from wishlist ──
+  function bindRemove() {
+    document.querySelectorAll('.remove-from-wishlist').forEach(function (btn) {
+      // Avoid double-binding
+      if (btn.dataset.bound) return;
+      btn.dataset.bound = '1';
+
+      btn.addEventListener('click', function () {
+        const productId = this.getAttribute('data-product-id');
+        const card = document.querySelector('.wishlist-card[data-product-id="' + productId + '"]');
+
+        fetch('/wishlist/add/' + productId + '/', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCsrf(), 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.status === 'removed' || data.status === 'added') {
+            if (card) {
+              card.classList.add('removing');
+              setTimeout(function () {
+                card.remove();
+                updateBadgeCount(-1);
+                if (!document.querySelector('.wishlist-card')) showEmpty();
+              }, 300);
+            }
+            Swal.fire({
+              icon: 'info', title: 'Removed',
+              text: data.message || 'Item removed from wishlist.',
+              timer: 1500, timerProgressBar: true,
+              showConfirmButton: false, confirmButtonColor: '#ff7d1a',
+            });
+          }
+        })
+        .catch(function () {
+          Swal.fire({ icon: 'error', title: 'Error', text: 'Could not remove item.', confirmButtonColor: '#ff7d1a' });
+        });
+      });
+    });
+  }
+
+  // ── Add to cart ──
+  function bindAddToCart() {
+    document.querySelectorAll('.overlay-btn.add-to-cart').forEach(function (btn) {
+      if (btn.dataset.bound) return;
+      btn.dataset.bound = '1';
+
+      btn.addEventListener('click', function () {
+        if (this.disabled) return;
+        const productId = this.getAttribute('data-product-id');
+        const url       = this.getAttribute('data-url');
+        const self      = this;
+        const csrf      = getCsrf();
+
+        self.disabled    = true;
+        self.textContent = 'Adding…';
+
+        // Fetch best color+size for this product, then add to cart
+        fetch('/product/' + productId + '/defaults/')
+        .then(function(r) { return r.json(); })
+        .then(function(defaults) {
+          const fd = new FormData();
+          fd.append('quantity', 1);
+          if (defaults.color_id) fd.append('color', defaults.color_id);
+          if (defaults.size_id)  fd.append('size',  defaults.size_id);
+          return fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf },
+            body: fd,
+            redirect: 'manual',
+          });
+        })
+        .then(function(r) {
+          if (!r) return null;
+          if (r.type === 'opaqueredirect' || r.status === 0) {
+            Swal.fire({
+              icon: 'warning', title: 'Login Required',
+              text: 'Please log in to add items to your cart.',
+              confirmButtonColor: '#ff7d1a', confirmButtonText: 'Go to Login',
+            }).then(function() { window.location.href = '/login/?next=/wishlist/'; });
+            return null;
+          }
+          return r.json();
+        })
+        .then(function(data) {
+          if (!data) return;
+          if (data.success) {
+            Swal.fire({
+              icon: 'success', title: 'Added to Cart!',
+              text: data.message || 'Item added successfully.',
+              timer: 1800, timerProgressBar: true,
+              showConfirmButton: false, confirmButtonColor: '#ff7d1a',
+            });
+            document.querySelectorAll('#cart-count, #cart-count-mobile').forEach(function(el) {
+              if (data.cart_count !== undefined) el.textContent = data.cart_count;
+            });
+            self.textContent = '✓ Added';
+            setTimeout(function() {
+              self.disabled = false;
+              self.textContent = 'Add to Cart';
+            }, 2000);
+          } else {
+            const isOOS = (data.error || '').toLowerCase().includes('stock');
+            Swal.fire({
+              icon: isOOS ? 'warning' : 'error',
+              title: isOOS ? 'Out of Stock' : 'Error',
+              text: data.error || 'Could not add to cart.',
+              confirmButtonColor: '#ff7d1a',
+            });
+            self.disabled    = false;
+            self.textContent = isOOS ? 'Out of Stock' : 'Add to Cart';
+            if (isOOS) self.disabled = true;
+          }
+        })
+        .catch(function() {
+          Swal.fire({ icon: 'error', title: 'Network Error', text: 'Please try again.', confirmButtonColor: '#ff7d1a' });
+          self.disabled    = false;
+          self.textContent = 'Add to Cart';
+        });
+      });
+    });
+  }
+
+  bindRemove();
+  bindAddToCart();
+});
+</script>
+{% endblock %}

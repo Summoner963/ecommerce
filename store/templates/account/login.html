@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
+
+  .auth-wrapper {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    background: #fafafa;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .auth-card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.09);
+    width: 100%;
+    max-width: 420px;
+    padding: 2.8rem 2.5rem 2.5rem;
+    animation: authIn 0.4s ease both;
+  }
+  @keyframes authIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .auth-eyebrow {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #ff7d1a;
+    margin: 0 0 6px;
+  }
+  .auth-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    color: #1a1a1a;
+    margin: 0 0 1.8rem;
+    line-height: 1.1;
+  }
+
+  /* Messages */
+  .auth-messages { margin-bottom: 1.2rem; display: flex; flex-direction: column; gap: 8px; }
+  .auth-msg {
+    padding: 10px 14px;
+    border-radius: 9px;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  .auth-msg.error   { background: #fff5f5; color: #c53030; border: 1px solid #fed7d7; }
+  .auth-msg.success { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+  .auth-msg.warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+  .auth-msg.info    { background: #ebf8ff; color: #2c5282; border: 1px solid #bee3f8; }
+
+  /* Fields */
+  .auth-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 1.1rem; }
+  .auth-field label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #444;
+    letter-spacing: 0.3px;
+  }
+  .auth-field input {
+    padding: 11px 14px;
+    border: 1.5px solid #e8e8e8;
+    border-radius: 10px;
+    font-size: 0.92rem;
+    font-family: 'DM Sans', sans-serif;
+    color: #1a1a1a;
+    background: #fafafa;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  }
+  .auth-field input:focus {
+    border-color: #ff7d1a;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(255,125,26,0.12);
+  }
+
+  /* Submit */
+  .auth-submit {
+    width: 100%;
+    padding: 13px;
+    background: #ff7d1a;
+    color: #fff;
+    border: none;
+    border-radius: 11px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    margin-top: 0.4rem;
+    box-shadow: 0 4px 14px rgba(255,125,26,0.35);
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.3px;
+  }
+  .auth-submit:hover  { opacity: 0.9; transform: translateY(-1px); }
+  .auth-submit:active { transform: translateY(0); }
+
+  /* Footer link */
+  .auth-footer {
+    text-align: center;
+    margin-top: 1.4rem;
+    font-size: 0.85rem;
+    color: #888;
+  }
+  .auth-footer a {
+    color: #ff7d1a;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .auth-footer a:hover { text-decoration: underline; }
+
+  /* Divider */
+  .auth-divider {
+    height: 1px;
+    background: #f0f0f0;
+    margin: 1.6rem 0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <p class="auth-eyebrow">Welcome back</p>
+    <h1 class="auth-title">Sign in</h1>
+
+    {% if messages %}
+    <div class="auth-messages">
+      {% for message in messages %}
+      <div class="auth-msg {{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="auth-field">
+        <label for="email">Email address</label>
+        <input type="email" name="email" id="email" placeholder="you@example.com" required>
+      </div>
+
+      <div class="auth-field">
+        <label for="password">Password</label>
+        <input type="password" name="password" id="password" placeholder="••••••••" required>
+      </div>
+
+      <button type="submit" class="auth-submit">Sign In</button>
+    </form>
+
+    <div class="auth-divider"></div>
+    <p class="auth-footer">Don't have an account? <a href="{% url 'store:register' %}">Create one</a></p>
+  </div>
+</div>
+{% endblock %}

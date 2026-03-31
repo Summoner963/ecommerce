@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
+
+  .auth-wrapper {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    background: #fafafa;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .auth-card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.09);
+    width: 100%;
+    max-width: 400px;
+    padding: 2.8rem 2.5rem 2.5rem;
+    animation: authIn 0.4s ease both;
+    text-align: center;
+  }
+  @keyframes authIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Icon */
+  .verify-icon {
+    width: 64px;
+    height: 64px;
+    background: #fff4ec;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.4rem;
+    border: 2px solid #ffe0c4;
+  }
+  .verify-icon svg { width: 28px; height: 28px; fill: #ff7d1a; }
+
+  .auth-eyebrow {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #ff7d1a;
+    margin: 0 0 6px;
+  }
+  .auth-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    color: #1a1a1a;
+    margin: 0 0 0.7rem;
+    line-height: 1.15;
+  }
+  .verify-subtitle {
+    font-size: 0.88rem;
+    color: #777;
+    margin: 0 0 1.8rem;
+    line-height: 1.5;
+  }
+  .verify-email-highlight {
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+
+  /* Messages */
+  .auth-messages { margin-bottom: 1.2rem; display: flex; flex-direction: column; gap: 8px; text-align: left; }
+  .auth-msg {
+    padding: 10px 14px;
+    border-radius: 9px;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  .auth-msg.error   { background: #fff5f5; color: #c53030; border: 1px solid #fed7d7; }
+  .auth-msg.success { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+  .auth-msg.warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+  .auth-msg.info    { background: #ebf8ff; color: #2c5282; border: 1px solid #bee3f8; }
+
+  /* OTP input row */
+  .otp-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 1.3rem;
+    text-align: left;
+  }
+  .otp-field label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #444;
+    letter-spacing: 0.3px;
+  }
+  .otp-field input {
+    padding: 13px 16px;
+    border: 1.5px solid #e8e8e8;
+    border-radius: 12px;
+    font-size: 1.4rem;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    color: #1a1a1a;
+    background: #fafafa;
+    outline: none;
+    letter-spacing: 10px;
+    text-align: center;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  }
+  .otp-field input:focus {
+    border-color: #ff7d1a;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(255,125,26,0.12);
+  }
+  .otp-field input::placeholder {
+    letter-spacing: 6px;
+    font-size: 1rem;
+    color: #ccc;
+  }
+
+  .auth-submit {
+    width: 100%;
+    padding: 13px;
+    background: #ff7d1a;
+    color: #fff;
+    border: none;
+    border-radius: 11px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(255,125,26,0.35);
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .auth-submit:hover  { opacity: 0.9; transform: translateY(-1px); }
+  .auth-submit:active { transform: translateY(0); }
+
+  .auth-divider { height: 1px; background: #f0f0f0; margin: 1.6rem 0; }
+
+  .resend-row {
+    font-size: 0.85rem;
+    color: #888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .resend-row a {
+    color: #ff7d1a;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .resend-row a:hover { text-decoration: underline; }
+
+  /* Countdown */
+  #resend-timer { color: #bbb; font-size: 0.82rem; }
+  #resend-link  { display: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-card">
+
+    <!-- Icon -->
+    <div class="verify-icon">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+      </svg>
+    </div>
+
+    <p class="auth-eyebrow">One more step</p>
+    <h1 class="auth-title">Check your inbox</h1>
+    <p class="verify-subtitle">
+      We sent a 6-digit code to<br>
+      <span class="verify-email-highlight">{{ email }}</span>
+    </p>
+
+    {% if messages %}
+    <div class="auth-messages">
+      {% for message in messages %}
+      <div class="auth-msg {{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="POST">
+      {% csrf_token %}
+
+      <div class="otp-field">
+        <label for="code">Verification Code</label>
+        <input type="text" id="code" name="code"
+               placeholder="······"
+               maxlength="6"
+               inputmode="numeric"
+               autocomplete="one-time-code"
+               required>
+      </div>
+
+      <button type="submit" class="auth-submit">Verify Email</button>
+    </form>
+
+    <div class="auth-divider"></div>
+
+    <div class="resend-row">
+      <span>Didn't get it?</span>
+      <span id="resend-timer">Resend in <b id="countdown">60</b>s</span>
+      <a href="{% url 'store:resend_verification_email' email=email %}" id="resend-link">
+        ↻ Resend code
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  // Only allow digits in OTP field
+  const codeInput = document.getElementById('code');
+  codeInput.addEventListener('input', function () {
+    this.value = this.value.replace(/\D/g, '').slice(0, 6);
+  });
+
+  // Resend countdown
+  let seconds = 60;
+  const timerEl     = document.getElementById('resend-timer');
+  const countdownEl = document.getElementById('countdown');
+  const resendLink  = document.getElementById('resend-link');
+
+  const tick = setInterval(function () {
+    seconds--;
+    countdownEl.textContent = seconds;
+    if (seconds <= 0) {
+      clearInterval(tick);
+      timerEl.style.display    = 'none';
+      resendLink.style.display = 'inline-flex';
+    }
+  }, 1000);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}My eCommerce Site{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  {% load static %}
+  {% load product_filters %}
+  <link rel="stylesheet" href="{% static 'css/style-prefix.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+  {% block extra_css %}{% endblock %}
+
+  <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+
+  <style>
+    /* ══════════════════════════════════════════════════
+       VARIABLES
+    ══════════════════════════════════════════════════ */
+    :root {
+      --primary:       #ff7d1a;
+      --primary-light: #fff3ea;
+      --primary-dark:  #e06b0f;
+      --dark:          #1d2025;
+      --gray:          #68707d;
+      --border:        #e8e8e8;
+      --bg-light:      #f8f9fb;
+      --white:         #ffffff;
+      --radius-sm:     8px;
+      --radius-md:     12px;
+      --transition:    0.2s ease;
+    }
+
+    /* ══════════════════════════════════════════════════
+       BASE — !important beats the old style.css
+    ══════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Poppins', sans-serif !important;
+      background: var(--bg-light) !important;
+      color: var(--dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      margin: 0; padding: 0;
+    }
+    main { flex: 1; }
+    a { text-decoration: none; color: inherit; }
+    button { font-family: inherit; cursor: pointer; }
+    img { max-width: 100%; display: block; }
+
+    /* ══════════════════════════════════════════════════
+       HEADER
+    ══════════════════════════════════════════════════ */
+    #header {
+      position: sticky !important;
+      top: 0 !important; z-index: 500 !important;
+      background: var(--white) !important;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important;
+      width: 100% !important;
+    }
+    .header-main { padding: 14px 0 !important; }
+    .header-main .container {
+      display: flex !important; align-items: center !important;
+      gap: 1rem !important; max-width: 1400px !important;
+      margin: 0 auto !important; padding: 0 1.5rem !important;
+    }
+
+    /* Logo */
+    .header-logo { flex-shrink: 0; display: flex; align-items: center; }
+    .header-logo img { height: 36px; width: auto; }
+
+    /* Search */
+    .header-search-container { flex: 1; max-width: 520px; }
+    .header-search-container form {
+      display: flex; align-items: center;
+      background: var(--bg-light); border: 1.5px solid var(--border);
+      border-radius: 50px; overflow: hidden;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .header-search-container form:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(255,125,26,0.12);
+    }
+    .search-field {
+      flex: 1; padding: 10px 18px; border: none; background: transparent;
+      font-size: 0.88rem; font-family: inherit; color: var(--dark); outline: none;
+    }
+    .search-field::placeholder { color: #bbb; }
+    .search-btn {
+      width: 44px; height: 44px; display: flex; align-items: center;
+      justify-content: center; background: var(--primary); border: none;
+      color: #fff; font-size: 1.1rem; flex-shrink: 0;
+      transition: background var(--transition); cursor: pointer;
+    }
+    .search-btn:hover { background: var(--primary-dark); }
+
+    /* User actions */
+    .header-user-actions {
+      display: flex !important; align-items: center !important;
+      gap: 4px !important; flex-shrink: 0;
+    }
+
+    /* Icon circle button */
+    .action-btn {
+      position: relative !important;
+      width: 42px !important; height: 42px !important;
+      display: flex !important; align-items: center !important;
+      justify-content: center !important; border-radius: 50% !important;
+      border: none !important; background: transparent !important;
+      color: var(--dark) !important; font-size: 1.35rem !important;
+      transition: background var(--transition), color var(--transition) !important;
+      cursor: pointer !important; text-decoration: none !important;
+    }
+    .action-btn:hover {
+      background: var(--primary-light) !important;
+      color: var(--primary) !important;
+    }
+
+    /* Badge */
+    .count {
+      position: absolute !important; top: 2px !important; right: 2px !important;
+      min-width: 17px !important; height: 17px !important; padding: 0 4px !important;
+      background: var(--primary) !important; color: #fff !important;
+      font-size: 0.62rem !important; font-weight: 700 !important;
+      border-radius: 20px !important; display: flex !important;
+      align-items: center !important; justify-content: center !important;
+      border: 1.5px solid #fff !important; z-index: 1 !important;
+      line-height: 1 !important;
+    }
+
+    /* ── Profile dropdown wrapper ── */
+    .profile-dropdown { position: relative; display: inline-flex; }
+
+    
+    #profile-dropdown-menu {
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+      position: fixed;       /* fixed to viewport, not relative to any parent */
+      background: var(--white);
+      min-width: 175px;
+      border-radius: var(--radius-md);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.14);
+      border: 1px solid var(--border);
+      padding: 10px 0 6px;
+      z-index: 99999;        /* now works — no stacking context ancestor caps it */
+      transform: translateY(-6px);
+      transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.18s;
+    }
+    #profile-dropdown-menu.open {
+      visibility: visible;
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+      transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0s;
+    }
+
+    /* Arrow */
+    #profile-dropdown-menu::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      right: 16px;
+      width: 11px;
+      height: 11px;
+      background: var(--white);
+      border-top: 1px solid var(--border);
+      border-left: 1px solid var(--border);
+      transform: rotate(45deg);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .dropdown-item {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      color: var(--dark);
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background var(--transition), color var(--transition);
+    }
+    .dropdown-item:hover {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+    .dropdown-item ion-icon { font-size: 1rem; }
+    .dropdown-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+    /* ══════════════════════════════════════════════════
+       DESKTOP NAV STRIP
+    ══════════════════════════════════════════════════ */
+    .desktop-navigation-menu {
+      border-top: 1px solid var(--border); background: var(--white);
+      position: relative;
+      z-index: 1;
+    }
+    .desktop-navigation-menu .container {
+      max-width: 1400px; margin: 0 auto; padding: 0 1.5rem;
+    }
+    .desktop-menu-category-list {
+      display: flex !important; align-items: center !important; justify-content: center !important;
+      list-style: none !important; gap: 4px !important;
+      margin: 0 !important; padding: 0 !important;
+    }
+    .menu-category { position: relative; }
+    .menu-category .menu-title {
+      display: block !important; padding: 13px 20px !important;
+      font-size: 0.875rem !important; font-weight: 600 !important;
+      color: var(--dark) !important; white-space: nowrap !important;
+      text-decoration: none !important;
+      transition: color var(--transition) !important;
+    }
+    .menu-category:hover > .menu-title { color: var(--primary) !important; }
+    .menu-category::after {
+      content: ''; position: absolute;
+      bottom: 0; left: 20px; right: 20px; height: 2px;
+      background: var(--primary); border-radius: 2px;
+      transform: scaleX(0); transition: transform 0.2s ease;
+    }
+    .menu-category:hover::after { transform: scaleX(1); }
+
+    /* ══════════════════════════════════════════════════
+       HAMBURGER BUTTON — desktop: hidden, mobile: flex
+    ══════════════════════════════════════════════════ */
+    #hamburger-btn {
+      display: none !important;
+      width: 42px !important; height: 42px !important;
+      align-items: center !important; justify-content: center !important;
+      border-radius: 50% !important; border: none !important;
+      background: transparent !important; color: var(--dark) !important;
+      font-size: 1.5rem !important; cursor: pointer !important;
+      flex-shrink: 0 !important;
+      transition: background var(--transition), color var(--transition) !important;
+    }
+    #hamburger-btn:hover {
+      background: var(--primary-light) !important; color: var(--primary) !important;
+    }
+
+    /* ══════════════════════════════════════════════════
+       MOBILE SLIDE-IN DRAWER
+    ══════════════════════════════════════════════════ */
+    #mobile-drawer {
+      position: fixed !important; top: 0 !important; left: -100% !important;
+      width: min(300px, 85vw) !important; height: 100% !important;
+      background: var(--white) !important; z-index: 9000 !important;
+      overflow-y: auto !important;
+      transition: left 0.3s cubic-bezier(0.4,0,0.2,1) !important;
+      box-shadow: 4px 0 24px rgba(0,0,0,0.18) !important;
+    }
+    #mobile-drawer.open { left: 0 !important; }
+
+    /* Overlay */
+    #drawer-overlay {
+      display: none !important; position: fixed !important; inset: 0 !important;
+      background: rgba(0,0,0,0.5) !important; z-index: 8900 !important;
+      backdrop-filter: blur(2px);
+    }
+    #drawer-overlay.open { display: block !important; }
+
+    /* Drawer header */
+    .drawer-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 20px; border-bottom: 1px solid var(--border);
+      background: var(--bg-light); position: sticky; top: 0; z-index: 1;
+    }
+    .drawer-title { font-size: 1rem; font-weight: 700; color: var(--dark); margin: 0; }
+    #drawer-close-btn {
+      width: 34px; height: 34px; display: flex; align-items: center;
+      justify-content: center; border-radius: 50%; border: none;
+      background: var(--border); color: var(--dark); font-size: 1.1rem;
+      cursor: pointer; transition: background var(--transition); flex-shrink: 0;
+    }
+    #drawer-close-btn:hover { background: #ddd; }
+
+    /* Drawer links */
+    .drawer-nav { list-style: none; margin: 0; padding: 6px 0; }
+    .drawer-nav li { border-bottom: 1px solid #f5f5f5; }
+    .drawer-nav a {
+      display: flex !important; align-items: center !important;
+      gap: 12px !important; padding: 15px 22px !important;
+      font-size: 0.925rem !important; font-weight: 600 !important;
+      color: var(--dark) !important; text-decoration: none !important;
+      transition: color var(--transition), background var(--transition) !important;
+    }
+    .drawer-nav a:hover {
+      color: var(--primary) !important; background: var(--primary-light) !important;
+    }
+    .drawer-nav a ion-icon { font-size: 1.15rem; flex-shrink: 0; color: var(--gray); }
+    .drawer-nav a:hover ion-icon { color: var(--primary); }
+
+    .drawer-section-label {
+      padding: 14px 22px 6px;
+      font-size: 0.68rem; font-weight: 800; letter-spacing: 2px;
+      text-transform: uppercase; color: #ccc;
+    }
+    .drawer-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+    /* ══════════════════════════════════════════════════
+       MOBILE BOTTOM BAR — desktop: hidden, mobile: flex
+    ══════════════════════════════════════════════════ */
+    #mobile-bottom-bar {
+      display: none !important;
+      position: fixed !important; bottom: 0 !important;
+      left: 0 !important; right: 0 !important;
+      background: var(--white) !important;
+      border-top: 1px solid var(--border) !important;
+      z-index: 400 !important;
+      box-shadow: 0 -3px 12px rgba(0,0,0,0.07) !important;
+      justify-content: space-around !important; align-items: center !important;
+      padding: 6px 0 max(6px, env(safe-area-inset-bottom)) !important;
+    }
+    .bottom-bar-btn {
+      display: flex !important; flex-direction: column !important;
+      align-items: center !important; gap: 2px !important;
+      padding: 6px 10px !important; border: none !important;
+      background: transparent !important; color: var(--gray) !important;
+      font-size: 0.58rem !important; font-weight: 600 !important;
+      font-family: inherit !important; cursor: pointer !important;
+      text-decoration: none !important; border-radius: var(--radius-sm) !important;
+      transition: color var(--transition), background var(--transition) !important;
+      position: relative !important; white-space: nowrap !important;
+    }
+    .bottom-bar-btn:hover, .bottom-bar-btn.active {
+      color: var(--primary) !important; background: var(--primary-light) !important;
+    }
+    .bottom-bar-btn ion-icon { font-size: 1.3rem !important; }
+    .bottom-bar-btn .count { top: 0 !important; right: 6px !important; }
+
+    /* ══════════════════════════════════════════════════
+       TOAST
+    ══════════════════════════════════════════════════ */
+    #global-toast {
+      position: fixed; bottom: 80px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--dark); color: #fff;
+      padding: 11px 22px; border-radius: 50px;
+      font-size: 0.875rem; font-weight: 600;
+      z-index: 99999; opacity: 0;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      pointer-events: none; white-space: nowrap; max-width: 90vw;
+    }
+    #global-toast.show  { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #global-toast.success { background: #22863a; }
+    #global-toast.error   { background: #e53e3e; }
+    #global-toast.info    { background: #3182ce; }
+
+    /* ══════════════════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════════════════ */
+    footer {
+      background: var(--dark) !important; color: #aaa !important;
+      text-align: center !important; padding: 20px !important;
+      font-size: 0.82rem !important; margin-top: auto;
+    }
+
+    /* ══════════════════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════════════════ */
+    @media (max-width: 900px) {
+      .desktop-navigation-menu { display: none !important; }
+      #hamburger-btn { display: flex !important; }
+      .header-search-container { max-width: 240px; }
+      .header-main .container { gap: 0.5rem !important; }
+      #mobile-bottom-bar { display: flex !important; }
+      body { padding-bottom: 68px !important; }
+      #global-toast { bottom: 78px; }
+    }
+
+    @media (max-width: 600px) {
+      .header-search-container { display: none !important; }
+    }
+
+    @media (max-width: 380px) {
+      .header-logo img { height: 28px; }
+      .header-main .container { padding: 0 1rem !important; }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- Drawer overlay -->
+<div id="drawer-overlay"></div>
+
+<!-- Mobile slide-in drawer -->
+<nav id="mobile-drawer" aria-label="Mobile navigation" aria-hidden="true">
+  <div class="drawer-header">
+    <h2 class="drawer-title">Menu</h2>
+    <button id="drawer-close-btn" aria-label="Close menu">
+      <ion-icon name="close-outline"></ion-icon>
+    </button>
+  </div>
+
+  <div class="drawer-section-label">Navigation</div>
+  <ul class="drawer-nav">
+    <li><a href="/"><ion-icon name="home-outline"></ion-icon>Home</a></li>
+    <li><a href="/about-us/"><ion-icon name="information-circle-outline"></ion-icon>About Us</a></li>
+    <li><a href="/contact-us/"><ion-icon name="call-outline"></ion-icon>Contact Us</a></li>
+  </ul>
+
+  <div class="drawer-divider"></div>
+  <div class="drawer-section-label">Account</div>
+
+  <ul class="drawer-nav">
+    {% if user.is_authenticated %}
+    <li><a href="{% url 'store:profile' %}"><ion-icon name="person-circle-outline"></ion-icon>My Profile</a></li>
+    <li><a href="{% url 'store:order_history' %}"><ion-icon name="receipt-outline"></ion-icon>My Orders</a></li>
+    <li><a href="/wishlist/"><ion-icon name="heart-outline"></ion-icon>Wishlist</a></li>
+    <div class="drawer-divider"></div>
+    <li><a href="{% url 'store:logout' %}"><ion-icon name="log-out-outline"></ion-icon>Logout</a></li>
+    {% else %}
+    <li><a href="{% url 'store:login' %}"><ion-icon name="log-in-outline"></ion-icon>Login</a></li>
+    <li><a href="{% url 'store:register' %}"><ion-icon name="person-add-outline"></ion-icon>Register</a></li>
+    {% endif %}
+  </ul>
+</nav>
+
+<header id="header">
+  <div class="header-main">
+    <div class="container">
+
+      <!-- Hamburger — shown on mobile via CSS -->
+      <button id="hamburger-btn" aria-label="Open menu" aria-expanded="false">
+        <ion-icon name="menu-outline"></ion-icon>
+      </button>
+
+      <!-- Logo -->
+      <a href="/" class="header-logo">
+        <img src="{% static 'images/logo/zipdown.svg' %}" alt="ZipDown" />
+      </a>
+
+      <!-- Search -->
+      <div class="header-search-container">
+        <form action="{% url 'store:search' %}" method="get">
+          <input type="search" name="q" class="search-field"
+                 placeholder="Search products…"
+                 value="{{ request.GET.q|default:'' }}" />
+          <button type="submit" class="search-btn">
+            <ion-icon name="search-outline"></ion-icon>
+          </button>
+        </form>
+      </div>
+
+      <!-- User actions -->
+      <div class="header-user-actions">
+
+        <!-- Profile dropdown trigger -->
+        <div class="profile-dropdown">
+          <button class="action-btn" id="profile-btn"
+                  aria-label="Account" aria-expanded="false" aria-haspopup="true">
+            <ion-icon name="person-outline"></ion-icon>
+          </button>
+         
+          <template id="profile-dropdown-template">
+            <div id="profile-dropdown-menu" role="menu">
+              {% if user.is_authenticated %}
+              <a href="{% url 'store:profile' %}" class="dropdown-item" role="menuitem">
+                <ion-icon name="person-circle-outline"></ion-icon>Profile
+              </a>
+              <a href="{% url 'store:order_history' %}" class="dropdown-item" role="menuitem">
+                <ion-icon name="receipt-outline"></ion-icon>My Orders
+              </a>
+              <div class="dropdown-divider"></div>
+              <a href="{% url 'store:logout' %}" class="dropdown-item" role="menuitem">
+                <ion-icon name="log-out-outline"></ion-icon>Logout
+              </a>
+              {% else %}
+              <a href="{% url 'store:login' %}" class="dropdown-item" role="menuitem">
+                <ion-icon name="log-in-outline"></ion-icon>Login
+              </a>
+              <a href="{% url 'store:register' %}" class="dropdown-item" role="menuitem">
+                <ion-icon name="person-add-outline"></ion-icon>Register
+              </a>
+              {% endif %}
+            </div>
+          </template>
+        </div>
+
+        <!-- Wishlist -->
+        <a href="/wishlist/" class="action-btn" aria-label="Wishlist">
+          <ion-icon name="heart-outline"></ion-icon>
+          <span id="wishlist-count" class="count">{{ wishlist_count }}</span>
+        </a>
+
+        <!-- Cart -->
+        <a href="/cart/" class="action-btn" aria-label="Cart">
+          <ion-icon name="bag-handle-outline"></ion-icon>
+          <span id="cart-count" class="count">{{ cart_count }}</span>
+        </a>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Desktop nav strip -->
+  <nav class="desktop-navigation-menu">
+    <div class="container">
+      <ul class="desktop-menu-category-list">
+        <li class="menu-category"><a href="/" class="menu-title">Home</a></li>
+        <li class="menu-category"><a href="/about-us/" class="menu-title">About Us</a></li>
+        <li class="menu-category"><a href="/contact-us/" class="menu-title">Contact Us</a></li>
+      </ul>
+    </div>
+  </nav>
+
+</header>
+
+<!-- Mobile bottom bar -->
+<div id="mobile-bottom-bar" role="navigation" aria-label="Mobile navigation">
+  <button class="bottom-bar-btn" id="bottom-hamburger" aria-label="Menu">
+    <ion-icon name="menu-outline"></ion-icon>
+    <span>Menu</span>
+  </button>
+  <a href="/" class="bottom-bar-btn" aria-label="Home">
+    <ion-icon name="home-outline"></ion-icon>
+    <span>Home</span>
+  </a>
+  <a href="/cart/" class="bottom-bar-btn" aria-label="Cart">
+    <ion-icon name="bag-handle-outline"></ion-icon>
+    <span>Cart</span>
+    <span id="cart-count-mobile" class="count">{{ cart_count }}</span>
+  </a>
+  <a href="/wishlist/" class="bottom-bar-btn" aria-label="Wishlist">
+    <ion-icon name="heart-outline"></ion-icon>
+    <span>Wishlist</span>
+    <span id="wishlist-count-mobile" class="count">{{ wishlist_count }}</span>
+  </a>
+  <a href="{% if user.is_authenticated %}{% url 'store:profile' %}{% else %}{% url 'store:login' %}{% endif %}"
+     class="bottom-bar-btn" aria-label="Profile">
+    <ion-icon name="person-outline"></ion-icon>
+    <span>Profile</span>
+  </a>
+</div>
+
+<div id="global-toast" role="status" aria-live="polite"></div>
+
+<main>{% block content %}{% endblock %}</main>
+
+<footer>
+  <p>&copy; {% now "Y" %} ZipDown. All rights reserved.</p>
+</footer>
+
+<script src="{% static 'js/script.js' %}"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  var profileBtn = document.getElementById('profile-btn');
+  var tmpl       = document.getElementById('profile-dropdown-template');
+  var profileMenu = null;
+
+  if (profileBtn && tmpl) {
+    document.body.appendChild(tmpl.content.cloneNode(true));
+    profileMenu = document.getElementById('profile-dropdown-menu');
+  }
+
+  function positionMenu() {
+    if (!profileBtn || !profileMenu) return;
+    var rect      = profileBtn.getBoundingClientRect();
+    var menuWidth = profileMenu.offsetWidth || 175;
+    var left      = rect.right - menuWidth;
+    if (left < 8) left = 8; // prevent off-screen left
+    profileMenu.style.top  = (rect.bottom + 10) + 'px';
+    profileMenu.style.left = left + 'px';
+  }
+
+  function openMenu() {
+    if (!profileMenu) return;
+    positionMenu();
+    profileMenu.classList.add('open');
+    profileBtn.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeMenu() {
+    if (!profileMenu) return;
+    profileMenu.classList.remove('open');
+    profileBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  if (profileBtn && profileMenu) {
+    profileBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      profileMenu.classList.contains('open') ? closeMenu() : openMenu();
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!profileBtn.contains(e.target) && !profileMenu.contains(e.target)) {
+        closeMenu();
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeMenu();
+    });
+
+    // Hover-close: small delay so cursor can travel from button into menu
+    profileBtn.addEventListener('mouseleave', function () {
+      setTimeout(function () {
+        if (!profileMenu.matches(':hover')) closeMenu();
+      }, 150);
+    });
+    profileMenu.addEventListener('mouseleave', function () {
+      closeMenu();
+    });
+
+    // Keep menu anchored to button while scrolling / resizing
+    window.addEventListener('scroll',  function () { if (profileMenu.classList.contains('open')) positionMenu(); }, { passive: true });
+    window.addEventListener('resize',  function () { if (profileMenu.classList.contains('open')) positionMenu(); }, { passive: true });
+  }
+
+  /* ══════════════════════════════════════════
+     DRAWER
+  ══════════════════════════════════════════ */
+  var drawer          = document.getElementById('mobile-drawer');
+  var overlay         = document.getElementById('drawer-overlay');
+  var hamburgerBtn    = document.getElementById('hamburger-btn');
+  var bottomHamburger = document.getElementById('bottom-hamburger');
+  var closeBtn        = document.getElementById('drawer-close-btn');
+
+  function openDrawer() {
+    if (!drawer) return;
+    drawer.classList.add('open');
+    overlay.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
+    if (hamburgerBtn) hamburgerBtn.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDrawer() {
+    if (!drawer) return;
+    drawer.classList.remove('open');
+    overlay.classList.remove('open');
+    drawer.setAttribute('aria-hidden', 'true');
+    if (hamburgerBtn) hamburgerBtn.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+  }
+
+  if (hamburgerBtn)    hamburgerBtn.addEventListener('click', openDrawer);
+  if (bottomHamburger) bottomHamburger.addEventListener('click', openDrawer);
+  if (closeBtn)        closeBtn.addEventListener('click', closeDrawer);
+  if (overlay)         overlay.addEventListener('click', closeDrawer);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeDrawer();
+  });
+
+  document.querySelectorAll('[data-mobile-menu-open-btn]').forEach(function (b) {
+    b.addEventListener('click', openDrawer);
+  });
+  document.querySelectorAll('[data-mobile-menu-close-btn]').forEach(function (b) {
+    b.addEventListener('click', closeDrawer);
+  });
+
+  /* ══════════════════════════════════════════
+     GLOBAL TOAST  —  window.showToast('msg', 'success')
+  ══════════════════════════════════════════ */
+  var toastEl = document.getElementById('global-toast');
+  var toastTimer;
+  window.showToast = function (msg, type) {
+    if (!toastEl) return;
+    toastEl.textContent = msg;
+    toastEl.className = 'show' + (type ? ' ' + type : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.className = ''; }, 2800);
+  };
+
+  /* ══════════════════════════════════════════
+     ACTIVE NAV HIGHLIGHT
+  ══════════════════════════════════════════ */
+  var path = window.location.pathname;
+  document.querySelectorAll('.menu-title').forEach(function (el) {
+    if (el.getAttribute('href') === path) el.style.color = 'var(--primary)';
+  });
+  document.querySelectorAll('.bottom-bar-btn').forEach(function (el) {
+    if (el.getAttribute('href') === path) el.classList.add('active');
+  });
+  document.querySelectorAll('.drawer-nav a').forEach(function (el) {
+    if (el.getAttribute('href') === path) el.style.color = 'var(--primary)';
+  });
+
+  /* ══════════════════════════════════════════
+     HEADER SCROLL SHADOW
+  ══════════════════════════════════════════ */
+  var header = document.getElementById('header');
+  if (header) {
+    window.addEventListener('scroll', function () {
+      header.style.boxShadow = window.scrollY > 10
+        ? '0 4px 20px rgba(0,0,0,0.13)'
+        : '0 2px 12px rgba(0,0,0,0.08)';
+    }, { passive: true });
+  }
+
+})();
+</script>
+
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>

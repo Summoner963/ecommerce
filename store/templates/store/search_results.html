@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% load store_extras %}
+{% load static %}
+
+{% block content %}
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+/* Reuse the exact same styles as home page — scoped to search page */
+.hp-wrap {
+  max-width: 1560px;
+  margin: 0 auto;
+  padding: 28px 24px 80px;
+}
+
+.hp-main-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.hp-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin: 0;
+}
+.hp-title span {
+  color: #ff7d1a;
+}
+.res-count {
+  font-size: 0.8rem;
+  color: #bbb;
+  font-weight: 600;
+}
+
+.hp-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.showcase {
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  cursor: pointer;
+}
+.showcase:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 32px rgba(0,0,0,0.12);
+}
+.showcase-banner {
+  position: relative;
+  height: 240px;
+  background: #f7f8fa;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.showcase-banner > a { display: block; width: 100%; height: 100%; }
+.card-main-img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  transition: transform 0.35s ease;
+  display: block;
+}
+.showcase:hover .card-main-img { transform: scale(1.05); }
+
+.showcase-badge {
+  position: absolute; top: 12px; left: 12px;
+  background: #22c55e; color: #fff;
+  font-size: 0.68rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 20px; z-index: 3; margin: 0;
+}
+.btn-wl {
+  position: absolute; top: 10px; right: 10px;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(255,255,255,0.92); border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: background 0.15s, transform 0.15s, color 0.15s;
+  color: #ccc; font-size: 1rem;
+}
+.btn-wl:hover { background: #fff; color: #e53e3e; transform: scale(1.1); }
+.btn-wl.in-wishlist { color: #e53e3e; background: #fff5f5; }
+.btn-wl ion-icon { pointer-events: none; font-size: 1rem; }
+
+.oos-overlay {
+  position: absolute; inset: 0;
+  background: rgba(255,255,255,0.75);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 5; pointer-events: none;
+}
+.oos-badge {
+  background: #e53e3e; color: #fff;
+  font-size: 0.7rem; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 5px 14px; border-radius: 30px;
+}
+.showcase.out-of-stock .showcase-title { color: #ccc; }
+.showcase.out-of-stock .price          { color: #ccc; }
+
+.showcase-content { padding: 13px 15px 15px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
+.showcase-style {
+  font-size: 0.66rem; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; color: #ff7d1a; text-decoration: none; display: block;
+}
+.showcase-title {
+  font-size: 0.9rem; font-weight: 700; color: #1a1a1a; margin: 0;
+  line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.card-title-link { text-decoration: none; }
+.card-title-link:hover .showcase-title { color: #ff7d1a; }
+
+.card-color-dots { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.card-color-dot {
+  width: 12px; height: 12px; border-radius: 50%; cursor: pointer; flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.14);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.card-color-dot:hover, .card-color-dot.active {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 0.5px #fff, 0 0 0 2px #ff7d1a;
+}
+.card-color-count { font-size: 0.67rem; color: #ccc; font-weight: 600; }
+
+.showcase-meta { display: flex; flex-wrap: wrap; gap: 4px; }
+.meta-tag { font-size: 0.63rem; font-weight: 700; border-radius: 5px; padding: 2px 7px; }
+.meta-tag.brand    { background: #eef4ff; color: #4a80d4; }
+.meta-tag.material { background: #f0fdf4; color: #3a9e5f; }
+
+.showcase-rating { display: flex; align-items: center; gap: 2px; }
+.showcase-rating ion-icon { font-size: 0.78rem; color: #f5a623; }
+.showcase-rating p { color: #bbb; font-size: 0.74rem; margin: 0 0 0 3px; }
+
+.price-box { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+.price { font-size: 0.98rem; font-weight: 800; color: #1a1a1a; margin: 0; }
+del { font-size: 0.8rem; color: #ccc; }
+
+.no-results {
+  grid-column: 1 / -1;
+  padding: 80px 0;
+  text-align: center;
+}
+.no-results p {
+  color: #bbb;
+  font-size: 0.95rem;
+  margin-bottom: 12px;
+}
+.no-results a {
+  color: #ff7d1a;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (max-width: 1399px) { .hp-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 1023px) { .hp-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; } .showcase-banner { height: 210px; } .hp-wrap { padding: 20px 16px 80px; } }
+@media (max-width: 560px)  { .hp-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } .showcase-banner { height: 170px; } .showcase-meta { display: none; } }
+</style>
+
+<div class="hp-wrap">
+
+  <div class="hp-main-hdr">
+    <h2 class="hp-title">Results for <span>"{{ query }}"</span></h2>
+    <span class="res-count">{{ enriched_products|length }} product{{ enriched_products|length|pluralize }}</span>
+  </div>
+
+  <div class="hp-grid">
+    {% for entry in enriched_products %}
+    {% with product=entry.product %}
+    <div class="showcase {% if entry.is_out_of_stock %}out-of-stock{% endif %}"
+         data-product-id="{{ product.id }}"
+         data-stock="{{ entry.display_stock }}"
+         data-default-color-id="{% if entry.display_color %}{{ entry.display_color.id }}{% endif %}">
+
+      <div class="showcase-banner">
+        <a href="{% url 'store:product' product.slug %}{% if entry.display_color %}?color={{ entry.display_color.id }}{% endif %}"
+           class="card-img-link" data-base-url="{% url 'store:product' product.slug %}">
+          <img class="card-main-img" src="{{ entry.display_image }}" alt="{{ product.name }}" loading="lazy" />
+        </a>
+        {% if entry.is_out_of_stock %}
+        <div class="oos-overlay"><span class="oos-badge">Out of Stock</span></div>
+        {% endif %}
+        {% if product.original_price and product.price < product.original_price %}
+        <p class="showcase-badge">Sale</p>
+        {% endif %}
+        <button class="btn-wl wishlist-btn {% if product.id in wishlist_product_ids %}in-wishlist{% endif %}"
+                data-product-id="{{ product.id }}"
+                data-url="{% url 'store:add_to_wishlist' product.id %}"
+                title="{% if product.id in wishlist_product_ids %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}">
+          <ion-icon name="{% if product.id in wishlist_product_ids %}heart{% else %}heart-outline{% endif %}"></ion-icon>
+        </button>
+      </div>
+
+      <div class="showcase-content">
+        <span class="showcase-style">{{ product.style.name }}</span>
+        <a href="{% url 'store:product' product.slug %}{% if entry.display_color %}?color={{ entry.display_color.id }}{% endif %}"
+           class="card-title-link" data-base-url="{% url 'store:product' product.slug %}">
+          <h3 class="showcase-title">{{ product.name }}</h3>
+        </a>
+
+        {% if entry.all_colors %}
+        <div class="card-color-dots">
+          {% for cd in entry.all_colors %}
+          <span class="card-color-dot {% if entry.display_color and cd.color_id == entry.display_color.id %}active{% endif %}"
+                title="{{ cd.color_name }}{% if not cd.in_stock %} (Out of Stock){% endif %}"
+                data-color-id="{{ cd.color_id }}"
+                data-img-url="{{ cd.img_url }}"
+                data-in-stock="{{ cd.in_stock|yesno:'true,false' }}"
+                data-best-size-id="{{ cd.best_size_id|default:'' }}"
+                data-best-combo-stock="{{ cd.best_combo_stock|default:0 }}"
+                style="background:{{ cd.hex_code }};{% if not cd.in_stock %}opacity:0.3;{% endif %}">
+          </span>
+          {% endfor %}
+          {% if entry.color_count > 5 %}
+          <span class="card-color-count">+{{ entry.color_count|add:"-5" }}</span>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="showcase-meta">
+          {% if product.brand %}<span class="meta-tag brand">{{ product.brand.name }}</span>{% endif %}
+          {% if product.material %}<span class="meta-tag material">{{ product.material.name }}</span>{% endif %}
+        </div>
+
+        <div class="showcase-rating">
+          {% with avg=product.avg_rating|default:0 %}
+          {% for i in "12345" %}
+          <ion-icon name="{% if forloop.counter <= avg %}star{% else %}star-outline{% endif %}"></ion-icon>
+          {% endfor %}
+          {% endwith %}
+          <p>({{ product.reviews.count }})</p>
+        </div>
+
+        <div class="price-box">
+          <p class="price">Rs.{{ product.price }}</p>
+          {% if product.original_price and product.price < product.original_price %}
+          <del>Rs.{{ product.original_price }}</del>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+    {% endwith %}
+    {% empty %}
+    <div class="no-results">
+      <p>No products found matching "{{ query }}".</p>
+      <a href="{% url 'store:home' %}">← Back to all products</a>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  /* ── Color dot hover: swap image + update links ── */
+  document.querySelectorAll('.card-color-dot').forEach(function (dot) {
+    dot.addEventListener('mouseenter', function () {
+      var sc      = this.closest('.showcase');
+      var img     = sc.querySelector('.card-main-img');
+      var imgLink = sc.querySelector('.card-img-link');
+      var ttlLink = sc.querySelector('.card-title-link');
+      var imgUrl  = this.dataset.imgUrl;
+      var colorId = this.dataset.colorId;
+      var baseUrl = imgLink ? imgLink.dataset.baseUrl : '';
+      if (img && imgUrl) img.src = imgUrl;
+      if (imgLink && baseUrl) imgLink.href = baseUrl + '?color=' + colorId;
+      if (ttlLink && baseUrl) ttlLink.href = baseUrl + '?color=' + colorId;
+      sc.querySelectorAll('.card-color-dot').forEach(function(d) { d.classList.remove('active'); });
+      this.classList.add('active');
+    });
+  });
+
+  /* ── Init links from active dot on load ── */
+  document.querySelectorAll('.showcase').forEach(function (sc) {
+    var activeDot = sc.querySelector('.card-color-dot.active');
+    if (!activeDot) return;
+    var imgLink = sc.querySelector('.card-img-link');
+    var ttlLink = sc.querySelector('.card-title-link');
+    var baseUrl = imgLink ? imgLink.dataset.baseUrl : '';
+    var colorId = activeDot.dataset.colorId;
+    if (baseUrl && colorId) {
+      if (imgLink) imgLink.href = baseUrl + '?color=' + colorId;
+      if (ttlLink) ttlLink.href = baseUrl + '?color=' + colorId;
+    }
+  });
+
+  /* ── Wishlist AJAX ── */
+  var csrf = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+  document.querySelectorAll('.wishlist-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var self = this;
+      fetch(this.dataset.url, { method: 'POST', headers: { 'X-CSRFToken': csrf, 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function (d) {
+        var icon = self.querySelector('ion-icon');
+        if (d.status === 'added') {
+          self.classList.add('in-wishlist'); if (icon) icon.setAttribute('name','heart');
+          Swal.fire({ icon:'success', title:'Added to Wishlist!', text:d.message, confirmButtonColor:'#ff7d1a', timer:1800, timerProgressBar:true, showConfirmButton:false });
+        } else if (d.status === 'removed') {
+          self.classList.remove('in-wishlist'); if (icon) icon.setAttribute('name','heart-outline');
+          Swal.fire({ icon:'info', title:'Removed', text:d.message, confirmButtonColor:'#ff7d1a', timer:1500, timerProgressBar:true, showConfirmButton:false });
+        }
+        if (d.wishlist_count !== undefined) {
+          document.querySelectorAll('#wishlist-count, #wishlist-count-mobile').forEach(function(el) { el.textContent = d.wishlist_count; });
+        }
+      })
+      .catch(function() { Swal.fire({ icon:'error', title:'Network Error', confirmButtonColor:'#ff7d1a' }); });
+    });
+  });
+
+});
+</script>
+{% endblock %}

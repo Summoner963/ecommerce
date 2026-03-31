@@ -1,0 +1,66 @@
+{% extends "base.html" %} {% block title %}Khalti Payment Failed{% endblock %}
+{% block extra_css %}
+<style>
+  .fail-page {
+    text-align: center;
+    padding: 4rem 2rem;
+  }
+  .fail-icon {
+    font-size: 4rem;
+    color: #5c2d91;
+    margin-bottom: 1.5rem;
+  }
+  .fail-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 1rem;
+  }
+  .fail-msg {
+    color: #666;
+    margin-bottom: 2rem;
+  }
+  .btn-retry {
+    display: inline-block;
+    padding: 12px 32px;
+    background: #5c2d91;
+    color: #fff;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background 0.2s;
+  }
+  .btn-retry:hover {
+    background: #4a2278;
+  }
+  .btn-cart {
+    display: inline-block;
+    padding: 12px 32px;
+    background: #eee;
+    color: #333;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 12px;
+  }
+  .btn-cart:hover {
+    background: #ddd;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="fail-page">
+  <div class="fail-icon">✕</div>
+  <h1 class="fail-title">Khalti Payment Failed</h1>
+  <p class="fail-msg">
+    Your Khalti payment could not be verified. Please try again or use another
+    payment method.
+  </p>
+  {% for message in messages %}
+  <p style="color: #5c2d91; margin-bottom: 1rem">{{ message }}</p>
+  {% endfor %}
+  <a href="{% url 'store:initiate_khalti' %}" class="btn-retry"
+    >Try Again with Khalti</a
+  >
+  <a href="{% url 'store:view_cart' %}" class="btn-cart">Back to Cart</a>
+</div>
+{% endblock %}

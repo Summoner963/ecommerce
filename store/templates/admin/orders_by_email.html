@@ -1,0 +1,39 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>Search Orders by User Email</h1>
+
+<form method="get">
+    <input type="text" name="email" placeholder="Enter user email" value="{{ query }}">
+    <button type="submit" class="btn btn-primary">Search</button>
+</form>
+
+{% if orders %}
+    <h2>Results for "{{ query }}"</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>User</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Created At</th>
+                <th>Total Cost</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td>{{ order.id }}</td>
+                <td>{{ order.user.username }}</td>
+                <td>{{ order.user.email }}</td>
+                <td>{{ order.get_status_display }}</td>
+                <td>{{ order.created_at|date:"M d, Y" }}</td>
+                <td>₹{{ order.total_cost }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% elif query %}
+    <p>No orders found for the provided email.</p>
+{% endif %}
+{% endblock %}

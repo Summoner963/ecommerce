@@ -1,0 +1,730 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --primary: #ff7d1a;
+    --primary-light: #fff3ea;
+    --dark: #1d2025;
+    --gray: #68707d;
+    --border: #e8e8e8;
+    --bg: #f8f9fb;
+  }
+
+  .pd-container {
+    max-width: 1200px; margin: 2rem auto; padding: 0 2rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start;
+  }
+
+  /* Gallery */
+  .gallery-section { position: sticky; top: 1.5rem; }
+  .main-image-wrap {
+    position: relative; aspect-ratio: 1/1; border-radius: 16px; overflow: hidden;
+    background: var(--bg); border: 1px solid var(--border); margin-bottom: 1rem;
+  }
+  #main-product-img {
+    width: 100%; height: 100%; object-fit: contain; cursor: zoom-in;
+    transition: transform 0.3s ease; display: block;
+  }
+  #main-product-img:hover { transform: scale(1.03); }
+  .thumbnail-strip { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
+  .thumb {
+    width: 72px; height: 72px; border-radius: 10px; overflow: hidden;
+    border: 2px solid transparent; cursor: pointer; background: var(--bg);
+    transition: border-color 0.2s, box-shadow 0.2s; flex-shrink: 0;
+  }
+  .thumb.active { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255,125,26,0.15); }
+  .thumb:hover  { border-color: #ccc; }
+  .thumb img    { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+  /* Lightbox */
+  .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 9999; align-items: center; justify-content: center; }
+  .lightbox.open { display: flex; }
+  .lightbox-inner { position: relative; max-width: 90vw; max-height: 90vh; }
+  .lightbox-inner img { max-width: 100%; max-height: 90vh; object-fit: contain; border-radius: 8px; }
+  .lightbox-close { position: absolute; top: -40px; right: 0; color: #fff; font-size: 2rem; cursor: pointer; background: none; border: none; padding: 0; line-height: 1; }
+
+  /* Info */
+  .pd-info { padding-top: 0.5rem; }
+  .pd-style { color: var(--primary); font-weight: 700; font-size: 0.78rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 0.8rem; }
+  .pd-name { font-size: clamp(1.6rem,3vw,2.4rem); font-weight: 800; color: var(--dark); line-height: 1.15; margin-bottom: 1rem; }
+
+  .pd-attributes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1.2rem; }
+  .pd-attr { display: flex; align-items: center; gap: 5px; background: #f5f5f5; border-radius: 8px; padding: 5px 12px; font-size: 0.82rem; color: #555; font-weight: 600; }
+  .pd-attr .attr-label { color: #aaa; font-weight: 500; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 2px; }
+  .pd-attr.brand    { background: #eef4ff; color: #4a80d4; }
+  .pd-attr.material { background: #f0fdf4; color: #3a9e5f; }
+  .pd-attr.style-tag { background: #fff5ee; color: var(--primary); }
+
+  .pd-rating { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 1rem; }
+  .stars { color: #f5a623; font-size: 1rem; letter-spacing: 1px; }
+  .rating-count { color: var(--gray); font-size: 0.85rem; }
+
+  .pd-price-box { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; }
+  .pd-price { font-size: 2rem; font-weight: 800; color: var(--dark); }
+  .pd-original { font-size: 1.1rem; color: #bbb; text-decoration: line-through; }
+  .pd-badge { background: var(--primary-light); color: var(--primary); padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 700; }
+
+  .pd-desc { color: var(--gray); line-height: 1.75; margin-bottom: 1.5rem; font-size: 0.95rem; }
+
+  /* Color selector */
+  .pd-colors { margin-bottom: 1.2rem; }
+  .pd-colors h4 { font-size: 0.85rem; font-weight: 700; color: var(--dark); margin-bottom: 0.6rem; }
+  .color-options { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+  .color-btn {
+    display: flex; align-items: center; gap: 0.5rem; padding: 6px 14px;
+    border: 2px solid var(--border); border-radius: 8px; background: #fff;
+    cursor: pointer; font-size: 0.85rem; color: var(--dark); font-weight: 600;
+    transition: all 0.2s; font-family: inherit; position: relative;
+  }
+  .color-btn:hover  { border-color: #aaa; }
+  .color-btn.selected { border-color: var(--primary); background: var(--primary-light); box-shadow: 0 0 0 3px rgba(255,125,26,0.12); }
+  .color-preview { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+  .color-btn.color-oos { opacity: 0.45; }
+  .color-btn.color-oos::after {
+    content: ''; position: absolute; left: 8px; right: 8px;
+    top: 50%; height: 1.5px; background: #e53e3e; transform: translateY(-50%);
+  }
+
+  /* Size selector */
+  .pd-sizes { margin-bottom: 1.5rem; }
+  .pd-sizes h4 { font-size: 0.85rem; font-weight: 700; color: var(--dark); margin-bottom: 0.6rem; }
+  .size-options { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+  .size-btn {
+    padding: 6px 16px; border: 2px solid var(--border); border-radius: 8px;
+    background: #fff; cursor: pointer; font-size: 0.85rem; color: var(--dark);
+    font-weight: 700; transition: all 0.2s; font-family: inherit; position: relative;
+  }
+  .size-btn:hover   { border-color: #aaa; }
+  .size-btn.selected { border-color: var(--primary); background: var(--primary-light); box-shadow: 0 0 0 3px rgba(255,125,26,0.12); }
+  .size-btn.size-oos { opacity: 0.4; text-decoration: line-through; cursor: not-allowed; }
+  .size-btn.size-oos:hover { border-color: var(--border); }
+
+  /* Form */
+  .pd-form { display: flex; flex-direction: column; gap: 1rem; }
+  .qty-row { display: flex; align-items: center; gap: 0.8rem; }
+  .qty-label { font-size: 0.85rem; font-weight: 700; color: var(--dark); }
+  .qty-control { display: flex; align-items: center; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .qty-btn { width: 40px; height: 42px; border: none; background: none; font-size: 1.2rem; cursor: pointer; color: var(--dark); transition: background 0.15s; }
+  .qty-btn:hover { background: #efefef; }
+  .qty-num { width: 48px; text-align: center; font-weight: 700; color: var(--dark); font-size: 1rem; padding: 0 4px; }
+  .qty-stock { font-size: 0.8rem; color: var(--gray); }
+
+  .btn-add-to-cart {
+    display: flex; align-items: center; justify-content: center; gap: 0.7rem;
+    padding: 14px; background: var(--primary); color: #fff; border: none;
+    border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer;
+    font-family: inherit; transition: all 0.2s; width: 100%;
+  }
+  .btn-add-to-cart:hover:not(:disabled) { background: #e06b0f; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(255,125,26,0.35); }
+  .btn-add-to-cart:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .btn-wishlist-detail {
+    display: flex; align-items: center; justify-content: center; gap: 0.7rem;
+    padding: 13px; background: #fff; color: #e53e3e; border: 2px solid #fecaca;
+    border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer;
+    font-family: inherit; transition: all 0.2s; width: 100%;
+  }
+  .btn-wishlist-detail:hover { background: #fff5f5; border-color: #e53e3e; }
+  .btn-wishlist-detail.in-wishlist { background: #fff5f5; border-color: #e53e3e; }
+  .btn-wishlist-detail ion-icon { font-size: 1.2rem; }
+
+  .combo-stock-msg {
+    font-size: 0.82rem; font-weight: 600; padding: 6px 12px; border-radius: 8px;
+    display: none;
+  }
+  .combo-stock-msg.in-stock  { background: #eafaf1; color: #27ae60; display: block; }
+  .combo-stock-msg.out-stock { background: #fdecea; color: #e53e3e; display: block; }
+
+  .toast-msg { padding: 10px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; display: none; }
+  .toast-msg.success { background: #eafaf1; color: #27ae60; display: block; }
+  .toast-msg.error   { background: #fdecea; color: #e53e3e; display: block; }
+
+  /* Reviews */
+  .reviews-section { max-width: 1200px; margin: 3rem auto 2rem; padding: 0 2rem; }
+  .reviews-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border); padding-bottom: 1rem; }
+  .reviews-header h2 { font-size: 1.4rem; font-weight: 800; color: var(--dark); }
+  .btn-write-review { padding: 10px 20px; background: var(--primary); color: #fff; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 0.9rem; transition: background 0.2s; }
+  .btn-write-review:hover { background: #e06b0f; }
+  .reviews-grid { display: flex; flex-direction: column; gap: 1.2rem; }
+  .review-card { background: #fff; border-radius: 12px; padding: 1.5rem; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .review-meta { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.6rem; }
+  .reviewer-name { font-weight: 700; color: var(--dark); font-size: 0.95rem; }
+  .review-date { color: var(--gray); font-size: 0.8rem; }
+  .review-stars { color: #f5a623; font-size: 0.9rem; margin-bottom: 0.5rem; }
+  .review-comment { color: var(--gray); line-height: 1.7; font-size: 0.9rem; }
+  .btn-del-review { font-size: 0.78rem; color: #e53e3e; text-decoration: none; border: 1px solid #fecaca; padding: 3px 10px; border-radius: 6px; margin-top: 0.5rem; display: inline-block; transition: background 0.2s; }
+  .btn-del-review:hover { background: #fdecea; }
+  .btn-edit-review { font-size: 0.78rem; color: #4c3ee5; text-decoration: none; border: 1px solid #cecafe; padding: 3px 10px; border-radius: 6px; margin-top: 0.5rem; display: inline-block; transition: background 0.2s; }
+  .btn-edit-review:hover { background: #fdecea; }
+  .no-reviews { color: var(--gray); font-style: italic; padding: 1rem 0; }
+
+  /* Recommendations */
+  .recommendations-section { max-width: 1200px; margin: 2rem auto 4rem; padding: 0 2rem; }
+  .recommendations-section h2 { font-size: 1.4rem; font-weight: 800; color: var(--dark); margin-bottom: 1.5rem; border-bottom: 2px solid var(--border); padding-bottom: 1rem; }
+  .rec-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 1.5rem; }
+  .rec-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; transition: transform 0.25s, box-shadow 0.25s; text-decoration: none; }
+  .rec-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+  .rec-card-img { width: 100%; height: 180px; object-fit: contain; background: var(--bg); display: block; }
+  .rec-card-info { padding: 1rem; }
+  .rec-card-name { font-size: 0.9rem; font-weight: 700; color: var(--dark); margin-bottom: 0.3rem; }
+  .rec-card-price { font-size: 0.85rem; color: var(--primary); font-weight: 700; }
+
+  @media (max-width: 900px) {
+    .pd-container { grid-template-columns: 1fr; gap: 2rem; }
+    .gallery-section { position: static; }
+  }
+  @media (max-width: 480px) {
+    .pd-container { padding: 0 1rem; }
+    .thumb { width: 56px; height: 56px; }
+  }
+
+  /* ═══════════════════════════════════════════
+     NEW: Description accordion — pure addition
+  ═══════════════════════════════════════════ */
+  .pd-desc-accordion {
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  /* Toggle button row */
+  .pd-desc-toggle {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 16px; background: var(--bg); border: none; cursor: pointer;
+    font-family: inherit; font-size: 0.88rem; font-weight: 700; color: var(--dark);
+    transition: background 0.15s;
+    gap: 0.5rem;
+  }
+  .pd-desc-toggle:hover { background: #f0f1f3; }
+
+  .pd-desc-toggle .toggle-label { display: flex; align-items: center; gap: 8px; }
+  .pd-desc-toggle .toggle-label ion-icon { font-size: 1rem; color: var(--primary); flex-shrink: 0; }
+
+  /* Animated chevron */
+  .pd-desc-chevron {
+    font-size: 0.72rem; color: var(--gray);
+    transition: transform 0.25s ease; flex-shrink: 0;
+  }
+  .pd-desc-accordion.open .pd-desc-chevron { transform: rotate(180deg); }
+
+  /* Collapsible body */
+  .pd-desc-body {
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.32s ease, padding 0.25s ease;
+    background: #fff;
+  }
+  .pd-desc-accordion.open .pd-desc-body {
+    max-height: 600px;   /* tall enough for any description */
+  }
+  .pd-desc-body-inner {
+    padding: 14px 16px 16px;
+    color: var(--gray); font-size: 0.93rem; line-height: 1.78;
+    border-top: 1px solid var(--border);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pd-container">
+
+  <!-- ══ Gallery ══ -->
+  <div class="gallery-section">
+    <div class="main-image-wrap">
+      {% if default_color_images %}
+        <img id="main-product-img" src="{{ default_color_images.0.image.url }}" alt="{{ product.name }}" title="Click to enlarge" />
+      {% else %}
+        <img id="main-product-img" src="{{ product.image.url }}" alt="{{ product.name }}" title="Click to enlarge" />
+      {% endif %}
+    </div>
+    <div class="thumbnail-strip" id="thumb-strip">
+      {% if default_color_images %}
+        {% for img in default_color_images %}
+        <div class="thumb {% if forloop.first %}active{% endif %}"
+             data-full="{{ img.image.url }}"
+             onclick="switchImage('{{ img.image.url }}', this)">
+          <img src="{{ img.image.url }}" alt="{{ product.name }}" />
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="thumb active" data-full="{{ product.image.url }}"
+             onclick="switchImage('{{ product.image.url }}', this)">
+          <img src="{{ product.image.url }}" alt="{{ product.name }}" />
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ══ Info Panel ══ -->
+  <div class="pd-info">
+
+    <div class="pd-style">{{ product.style.name }}</div>
+    <h1 class="pd-name">{{ product.name }}</h1>
+
+    <div class="pd-attributes">
+      {% if product.brand %}
+      <div class="pd-attr brand"><span class="attr-label">Brand</span>{{ product.brand.name }}</div>
+      {% endif %}
+      {% if product.material %}
+      <div class="pd-attr material"><span class="attr-label">Material</span>{{ product.material.name }}</div>
+      {% endif %}
+      <div class="pd-attr style-tag"><span class="attr-label">Style</span>{{ product.style.name }}</div>
+    </div>
+
+    <div class="pd-rating">
+      <span class="stars">
+        {% for i in avg_rating_range %}{% if i <= avg_rating %}★{% else %}☆{% endif %}{% endfor %}
+      </span>
+      <span class="rating-count">({{ reviews.count }} review{{ reviews.count|pluralize }})</span>
+    </div>
+
+    <div class="pd-price-box">
+      <span class="pd-price">Rs.{{ product.price }}</span>
+      {% if product.original_price != product.price %}
+        <span class="pd-original">Rs.{{ product.original_price }}</span>
+        {% if discount_percentage %}
+          <span class="pd-badge">{{ discount_percentage }}% off</span>
+        {% endif %}
+      {% endif %}
+    </div>
+    <div class="pd-desc-accordion" id="pd-desc-accordion">
+      <button class="pd-desc-toggle" type="button"
+              aria-expanded="false" aria-controls="pd-desc-body"
+              id="pd-desc-toggle">
+        <span class="toggle-label">
+          <ion-icon name="document-text-outline"></ion-icon>
+          Product Description
+        </span>
+        <span class="pd-desc-chevron">▼</span>
+      </button>
+      <div class="pd-desc-body" id="pd-desc-body" role="region" aria-labelledby="pd-desc-toggle">
+        <div class="pd-desc-body-inner">
+          {{ product.description }}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Color Selector ── -->
+    {% if colors_with_stock %}
+    <div class="pd-colors">
+      <h4>Color: <span id="selected-color-name">{% if default_color %}{{ default_color.name }}{% endif %}</span></h4>
+      <div class="color-options">
+        {% for entry in colors_with_stock %}
+        <button type="button"
+                class="color-btn {% if default_color and entry.color.id == default_color.id %}selected{% endif %} {% if not entry.in_stock %}color-oos{% endif %}"
+                data-color-id="{{ entry.color.id }}"
+                data-color-name="{{ entry.color.name }}"
+                data-product-id="{{ product.id }}"
+                onclick="selectColor(this)">
+          <span class="color-preview"
+                style="background:{{ entry.color.hex_code|default:'#eeeeee' }};
+                       border:{% if entry.color.hex_code == '#000000' or entry.color.hex_code == '#000' %}1.5px solid #999{% else %}1px solid rgba(0,0,0,0.15){% endif %};">
+          </span>
+          {{ entry.color.name }}
+          {% if not entry.in_stock %}<span style="font-size:0.7rem;color:#e53e3e;margin-left:2px;">(Out)</span>{% endif %}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Size Selector ── -->
+    {% if sizes_with_stock %}
+    <div class="pd-sizes">
+      <h4>Size: <span id="selected-size-label">{% if default_size %}{{ default_size.value }} {{ default_size.unit }}{% endif %}</span></h4>
+      <div class="size-options">
+        {% for entry in sizes_with_stock %}
+        <button type="button"
+                class="size-btn {% if default_size and entry.size.id == default_size.id %}selected{% endif %}"
+                data-size-id="{{ entry.size.id }}"
+                data-size-label="{{ entry.size.value }} {{ entry.size.unit }}"
+                onclick="selectSize(this)">
+          {{ entry.size.value }} {{ entry.size.unit }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Form ── -->
+    <form id="add-to-cart-form" action="{% url 'store:add_to_cart' product.id %}" method="POST">
+      {% csrf_token %}
+      <input type="hidden" id="selected_color_id" name="color"
+             value="{% if default_color %}{{ default_color.id }}{% endif %}" />
+      <input type="hidden" id="selected_size_id" name="size"
+             value="{% if default_size %}{{ default_size.id }}{% endif %}" />
+      <input type="hidden" id="qty-input" name="quantity" value="1" />
+
+      <div class="pd-form">
+
+        <div class="qty-row" id="qty-row">
+          <span class="qty-label">Qty:</span>
+          <div class="qty-control">
+            <button type="button" class="qty-btn" id="qty-minus">−</button>
+            <span class="qty-num" id="qty-display">1</span>
+            <button type="button" class="qty-btn" id="qty-plus">+</button>
+          </div>
+          <span id="stock-display" class="qty-stock">{{ initial_combo_stock }} in stock</span>
+        </div>
+
+        <div class="combo-stock-msg" id="combo-stock-msg"></div>
+        <div class="toast-msg" id="toast-msg"></div>
+
+        <button type="submit" class="btn-add-to-cart" id="add-to-cart-btn"
+                {% if initial_combo_stock == 0 %}disabled{% endif %}>
+          {% if initial_combo_stock > 0 %}🛒 Add to Cart{% else %}Out of Stock{% endif %}
+        </button>
+
+        <button type="button"
+                id="detail-wishlist-btn"
+                class="btn-wishlist-detail {% if product in user_wishlist_products %}in-wishlist{% endif %}"
+                data-product-id="{{ product.id }}"
+                data-url="{% url 'store:add_to_wishlist' product.id %}">
+          <ion-icon name="{% if product in user_wishlist_products %}heart{% else %}heart-outline{% endif %}"></ion-icon>
+          <span id="wishlist-btn-text">
+            {% if product in user_wishlist_products %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}
+          </span>
+        </button>
+
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<!-- ══ Reviews ══ -->
+<section class="reviews-section">
+  <div class="reviews-header">
+    <h2>Customer Reviews ({{ reviews.count }})</h2>
+    {% if can_review %}
+      <a href="{% url 'store:add_review' product.slug %}" class="btn-write-review">Write a Review</a>
+    {% elif already_reviewed %}
+      <span style="color:var(--gray);font-size:0.9rem">You've already reviewed this product.</span>
+    {% elif user.is_authenticated %}
+      <span style="color:var(--gray);font-size:0.9rem">Only available after order delivery.</span>
+    {% else %}
+      <a href="{% url 'store:login' %}" class="btn-write-review">Login to Review</a>
+    {% endif %}
+  </div>
+  {% if reviews %}
+  <div class="reviews-grid">
+    {% for review in reviews %}
+    <div class="review-card">
+      <div class="review-meta">
+        <div>
+          <div class="reviewer-name">{{ review.user.name|default:review.user.email }}</div>
+          <div class="review-stars">
+            {% for i in "12345" %}{% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}{% endfor %}
+            ({{ review.rating }}/5)
+          </div>
+        </div>
+        <div class="review-date">{{ review.created_at|date:"M d, Y" }}</div>
+      </div>
+      <div class="review-comment">{{ review.comment }}</div>
+      {% if user == review.user %}
+      <a href="{% url 'store:delete_review' product.slug review.id %}" class="btn-del-review">Delete</a>
+      <a href="{% url 'store:edit_review' product.slug review.id %}" class="btn-edit-review">Edit</a>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="no-reviews">No reviews yet. Be the first to review this product!</p>
+  {% endif %}
+</section>
+
+{% if recommendations %}
+<section class="recommendations-section">
+  <h2>You May Also Like</h2>
+  <div class="rec-grid">
+    {% for rec in recommendations %}
+    <a href="{% url 'store:product' rec.slug %}" class="rec-card">
+      <img src="{{ rec.image.url }}" alt="{{ rec.name }}" class="rec-card-img" />
+      <div class="rec-card-info">
+        <div class="rec-card-name">{{ rec.name }}</div>
+        <div class="rec-card-price">Rs.{{ rec.price }}</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <div class="lightbox-inner">
+    <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+    <img id="lightbox-img" src="" alt="" />
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  'use strict';
+
+  const $         = id => document.getElementById(id);
+  const mainImg   = $('main-product-img');
+  const thumbStrip = $('thumb-strip');
+  const toast     = $('toast-msg');
+  const qtyDisp   = $('qty-display');
+  const qtyInput  = $('qty-input');
+  const addBtn    = $('add-to-cart-btn');
+  const stockDisp = $('stock-display');
+  const qtyRow    = $('qty-row');
+  const comboMsg  = $('combo-stock-msg');
+
+  const stockMap = {{ stock_map_json|safe }};
+
+  let selectedColor = "{{ default_color.id|default:'' }}";
+  let selectedSize  = "{{ default_size.id|default:'' }}";
+  let currentMax    = {{ initial_combo_stock }};
+
+  function readQty()    { return parseInt(qtyDisp ? qtyDisp.textContent : '1') || 1; }
+  function updateQty(n) {
+    const v = Math.max(1, Math.min(n, currentMax > 0 ? currentMax : 1));
+    if (qtyDisp)  qtyDisp.textContent = v;
+    if (qtyInput) qtyInput.value      = v;
+  }
+
+  const minusBtn = $('qty-minus');
+  const plusBtn  = $('qty-plus');
+  if (minusBtn) minusBtn.addEventListener('click', () => updateQty(readQty() - 1));
+  if (plusBtn)  plusBtn.addEventListener('click',  () => updateQty(readQty() + 1));
+
+  function updateComboUI() {
+    const sizeMap = stockMap[selectedColor] || {};
+    const stock   = (selectedColor && selectedSize) ? (sizeMap[selectedSize] ?? 0) : 0;
+    currentMax    = stock;
+
+    if (stockDisp) stockDisp.textContent = stock + ' in stock';
+
+    if (comboMsg) {
+      if (!selectedColor || !selectedSize) {
+        comboMsg.className = 'combo-stock-msg';
+        comboMsg.textContent = '';
+      } else if (stock === 0) {
+        comboMsg.className = 'combo-stock-msg out-stock';
+        comboMsg.textContent = '✗ This combination is out of stock';
+      } else {
+        comboMsg.className = 'combo-stock-msg in-stock';
+        comboMsg.textContent = `✓ ${stock} available`;
+      }
+    }
+
+    if (addBtn) {
+      if (stock === 0) {
+        addBtn.disabled     = true;
+        addBtn.textContent  = 'Out of Stock';
+      } else {
+        addBtn.disabled    = false;
+        addBtn.innerHTML   = '🛒 Add to Cart';
+      }
+    }
+
+    if (qtyRow) {
+      qtyRow.style.opacity       = stock === 0 ? '0.4' : '1';
+      qtyRow.style.pointerEvents = stock === 0 ? 'none' : '';
+    }
+
+    updateQty(1);
+
+    document.querySelectorAll('.size-btn').forEach(function (btn) {
+      const sid   = btn.dataset.sizeId;
+      const avail = selectedColor ? ((stockMap[selectedColor] || {})[sid] ?? 0) : 0;
+      if (avail === 0) { btn.classList.add('size-oos'); }
+      else             { btn.classList.remove('size-oos'); }
+    });
+
+    document.querySelectorAll('.color-btn').forEach(function (btn) {
+      const cid   = btn.dataset.colorId;
+      const total = Object.values(stockMap[cid] || {}).reduce((a, b) => a + b, 0);
+      if (total === 0) { btn.classList.add('color-oos'); }
+      else             { btn.classList.remove('color-oos'); }
+    });
+  }
+
+  window.switchImage = function (url, thumbEl) {
+    if (!mainImg) return;
+    mainImg.src = url;
+    thumbStrip.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
+    thumbEl.classList.add('active');
+  };
+
+  if (mainImg) {
+    mainImg.addEventListener('click', function () {
+      $('lightbox-img').src = this.src;
+      $('lightbox').classList.add('open');
+    });
+  }
+  window.closeLightbox = function (e) {
+    const lb = $('lightbox');
+    if (!lb) return;
+    if (!e || e.target === lb || (e.target && e.target.classList.contains('lightbox-close'))) {
+      lb.classList.remove('open');
+    }
+  };
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { const lb = $('lightbox'); if (lb) lb.classList.remove('open'); }
+  });
+
+  window.selectColor = function (btn) {
+    document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+
+    selectedColor = btn.dataset.colorId;
+    const colorName  = btn.dataset.colorName;
+    const productId  = btn.dataset.productId;
+
+    const hc = $('selected_color_id');
+    if (hc) hc.value = selectedColor;
+
+    const nl = $('selected-color-name');
+    if (nl) nl.textContent = colorName;
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('color', selectedColor);
+    window.history.replaceState({}, '', url.toString());
+
+    updateComboUI();
+
+    fetch('/product/' + productId + '/images/?color=' + selectedColor)
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(function (data) {
+        if (!data.images || !data.images.length) return;
+        mainImg.src = data.images[0].url;
+        thumbStrip.innerHTML = '';
+        data.images.forEach(function (img, idx) {
+          const thumb = document.createElement('div');
+          thumb.className = 'thumb' + (idx === 0 ? ' active' : '');
+          thumb.onclick = function () { switchImage(img.url, this); };
+          const i = document.createElement('img');
+          i.src = img.url; i.alt = colorName;
+          thumb.appendChild(i);
+          thumbStrip.appendChild(thumb);
+        });
+      })
+      .catch(err => console.error('Color image fetch:', err));
+  };
+
+  window.selectSize = function (btn) {
+    if (btn.classList.contains('size-oos')) return;
+
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+
+    selectedSize = btn.dataset.sizeId;
+
+    const hs = $('selected_size_id');
+    if (hs) hs.value = selectedSize;
+
+    const sl = $('selected-size-label');
+    if (sl) sl.textContent = btn.dataset.sizeLabel;
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('size', selectedSize);
+    window.history.replaceState({}, '', url.toString());
+
+    updateComboUI();
+  };
+
+  const form = $('add-to-cart-form');
+  if (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (addBtn && addBtn.disabled) return;
+
+      fetch(this.action, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': this.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: new FormData(this),
+      })
+      .then(r => r.json())
+      .then(function (data) {
+        if (toast) {
+          toast.className = 'toast-msg ' + (data.success ? 'success' : 'error');
+          toast.textContent = data.success ? ('✓ ' + data.message) : ('✗ ' + (data.error || 'Error'));
+          setTimeout(() => { toast.className = 'toast-msg'; }, 2500);
+        }
+        if (data.success && data.cart_count !== undefined) {
+          ['cart-count', 'cart-count-mobile'].forEach(function (id) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = data.cart_count;
+          });
+        }
+      })
+      .catch(function () {
+        if (toast) {
+          toast.className = 'toast-msg error';
+          toast.textContent = '✗ Network error. Please try again.';
+          setTimeout(() => { toast.className = 'toast-msg'; }, 4000);
+        }
+      });
+    });
+  }
+
+  const wishlistBtn = $('detail-wishlist-btn');
+  if (wishlistBtn) {
+    wishlistBtn.addEventListener('click', function () {
+      const self = this;
+      fetch(this.dataset.url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+      })
+      .then(r => r.json())
+      .then(function (data) {
+        const icon = self.querySelector('ion-icon');
+        const txt  = $('wishlist-btn-text');
+        if (data.status === 'added') {
+          self.classList.add('in-wishlist');
+          if (icon) icon.setAttribute('name', 'heart');
+          if (txt)  txt.textContent = 'Remove from Wishlist';
+        } else {
+          self.classList.remove('in-wishlist');
+          if (icon) icon.setAttribute('name', 'heart-outline');
+          if (txt)  txt.textContent = 'Add to Wishlist';
+        }
+        ['wishlist-count', 'wishlist-count-mobile'].forEach(function (id) {
+          const el = document.getElementById(id);
+          if (el && data.wishlist_count !== undefined) el.textContent = data.wishlist_count;
+        });
+      })
+      .catch(err => console.error('Wishlist error:', err));
+    });
+  }
+
+  (function restoreFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const cp = params.get('color');
+    const sp = params.get('size');
+    if (cp) {
+      const cb = document.querySelector('.color-btn[data-color-id="' + cp + '"]');
+      if (cb) selectColor(cb);
+    }
+    if (sp) {
+      const sb = document.querySelector('.size-btn[data-size-id="' + sp + '"]');
+      if (sb && !sb.classList.contains('size-oos')) selectSize(sb);
+    }
+  })();
+
+  updateComboUI();
+
+  /* ═══════════════════════════════════════════
+     NEW: Description accordion JS — pure addition
+  ═══════════════════════════════════════════ */
+  var descAccordion = document.getElementById('pd-desc-accordion');
+  var descToggle    = document.getElementById('pd-desc-toggle');
+
+  if (descToggle && descAccordion) {
+    descToggle.addEventListener('click', function () {
+      var isOpen = descAccordion.classList.toggle('open');
+      descToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+  }
+
+})();
+</script>
+{% endblock %}

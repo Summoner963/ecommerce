@@ -1,0 +1,346 @@
+{% extends "base.html" %} {% block extra_css %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
+
+  :root {
+    --primary: #ff7d1a;
+    --primary-light: #fff4ec;
+    --primary-mid: #ffe0c4;
+    --text-dark: #1a1a1a;
+    --text-mid: #555;
+    --text-light: #999;
+    --border: #f0f0f0;
+    --radius: 14px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.07);
+    --shadow-hover: 0 12px 36px rgba(0,0,0,0.11);
+  }
+
+  .oh-page {
+    background: #fafafa;
+    min-height: 70vh;
+    padding: 3rem 0 5rem;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* ── Header ── */
+  .oh-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 2.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .oh-eyebrow {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin: 0 0 5px;
+  }
+  .oh-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem;
+    color: var(--text-dark);
+    margin: 0;
+    line-height: 1.1;
+  }
+  .oh-count-badge {
+    background: var(--primary-light);
+    color: var(--primary);
+    border: 1px solid var(--primary-mid);
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 30px;
+    white-space: nowrap;
+    align-self: flex-start;
+    margin-top: 6px;
+  }
+
+  /* ── Order list ── */
+  .oh-list { display: flex; flex-direction: column; gap: 1.5rem; }
+
+  /* ── Order card ── */
+  .oh-card {
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: box-shadow 0.25s, transform 0.25s;
+    animation: cardIn 0.35s ease both;
+  }
+  .oh-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-3px); }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  {% for i in "12345678" %}
+  .oh-card:nth-child({{ forloop.counter }}) { animation-delay: {{ forloop.counter0 }}00ms; }
+  {% endfor %}
+
+  /* Card top bar */
+  .oh-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    background: #fafafa;
+  }
+  .oh-order-id {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text-dark);
+    margin: 0;
+  }
+  .oh-order-id span { color: var(--primary); }
+  .oh-order-date {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    margin: 0;
+  }
+
+  /* Status pill */
+  .oh-status {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 20px;
+  }
+  .oh-status.pending   { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+  .oh-status.shipped   { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; }
+  .oh-status.delivered { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+  .oh-status.cancelled { background: #fff5f5; color: #c53030; border: 1px solid #fed7d7; }
+
+  /* Payment pill */
+  .oh-payment {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--primary-light);
+    color: var(--primary);
+    border: 1px solid var(--primary-mid);
+    text-transform: capitalize;
+  }
+
+  /* Items */
+  .oh-items { padding: 0 22px; }
+  .oh-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .oh-item:last-child { border-bottom: none; }
+
+  .oh-item-img {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    border-radius: 10px;
+    background: #f7f7f7;
+    flex-shrink: 0;
+    padding: 4px;
+  }
+  .oh-item-info { flex: 1; min-width: 0; }
+  .oh-item-name {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin: 0 0 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .oh-item-meta {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    margin: 0;
+  }
+  .oh-item-price {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    white-space: nowrap;
+  }
+
+  /* Card footer */
+  .oh-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 22px;
+    background: #fafafa;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .oh-total-label { font-size: 0.78rem; color: var(--text-light); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+  .oh-total-amount { font-size: 1.15rem; font-weight: 800; color: var(--text-dark); }
+
+  /* ── Empty state ── */
+  .oh-empty {
+    text-align: center;
+    padding: 5rem 2rem;
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    max-width: 420px;
+    margin: 0 auto;
+  }
+  .oh-empty-icon {
+    width: 68px; height: 68px;
+    background: var(--primary-light);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.4rem;
+    border: 2px solid var(--primary-mid);
+  }
+  .oh-empty-icon ion-icon { font-size: 2rem; color: var(--primary); }
+  .oh-empty h2 { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--text-dark); margin: 0 0 0.5rem; }
+  .oh-empty p  { color: var(--text-mid); font-size: 0.9rem; margin: 0 0 2rem; }
+  .btn-shop {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--primary); color: #fff;
+    font-weight: 700; font-size: 0.88rem;
+    padding: 12px 26px; border-radius: 10px;
+    text-decoration: none;
+    box-shadow: 0 4px 14px rgba(255,125,26,0.35);
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn-shop:hover { opacity: 0.9; transform: translateY(-1px); }
+</style>
+{% endblock %} {% block content %}
+<div class="oh-page">
+  <div class="container">
+    <div class="oh-header">
+      <div>
+        <p class="oh-eyebrow">Your purchases</p>
+        <h2 class="oh-title">Order History</h2>
+      </div>
+      {% if orders %}
+      <span class="oh-count-badge"
+        >{{ orders|length }} order{{ orders|length|pluralize }}</span
+      >
+      {% endif %}
+    </div>
+
+    {% if orders %}
+    <div class="oh-list">
+      {% for order in orders %}
+      <div class="oh-card">
+        <!-- Card header -->
+        <div class="oh-card-header">
+          <div>
+            <p class="oh-order-id">Order <span>#{{ order.id }}</span></p>
+            <p class="oh-order-date">
+              {{ order.created_at|date:"M d, Y · g:i A" }}
+            </p>
+          </div>
+          <div
+            style="
+              display: flex;
+              gap: 8px;
+              align-items: center;
+              flex-wrap: wrap;
+            "
+          >
+            <span class="oh-payment">{{ order.payment_method }}</span>
+            <span
+              class="oh-status {% if order.status == 'P' %}pending{% elif order.status == 'S' %}shipped{% elif order.status == 'D' %}delivered{% elif order.status == 'C' %}cancelled{% endif %}"
+            >
+              {{ order.get_status_display }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Items -->
+        <div class="oh-items">
+          {% for item in order.items.all %}
+          <div class="oh-item">
+            <!-- Use color's front image if available, else product default -->
+            {% with front_img=item.product.images.filter %}
+            {% load store_extras %}
+                {% get_item_image item as item_img_url %}
+                <img src="{{ item_img_url }}" alt="{{ item.product.name }}" class="oh-item-img" />
+            {% endwith %}
+            <div class="oh-item-info">
+                <p class="oh-item-name">{{ item.product.name }}</p>
+                <p class="oh-item-meta">
+                Qty: {{ item.quantity }}
+                {% if item.color %}
+                    · <span style="display:inline-flex;align-items:center;gap:4px;vertical-align:middle;">
+                        {% if item.color.hex_code %}
+                        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{{ item.color.hex_code }};border:1px solid #ddd;"></span>
+                        {% endif %}
+                        {{ item.color.name }}
+                    </span>
+                {% endif %}
+                {% if item.size %}· {{ item.size.value }} {{ item.size.unit }}{% endif %}
+                {% if item.product.brand %}· {{ item.product.brand.name }}{% endif %}
+                {% if item.product.material %}· {{ item.product.material.name }}{% endif %}
+                </p>
+            </div>
+            {% if order.status == 'D' %}
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <a
+              href="{% url 'store:add_review' item.product.slug %}"
+              style="
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                font-size: 0.75rem;
+                font-weight: 700;
+                color: #fff;
+                background: #ff7d1a;
+                padding: 6px 12px;
+                border-radius: 8px;
+                text-decoration: none;
+                transition: opacity 0.15s;
+              "
+              onmouseover="this.style.opacity = '0.85'"
+              onmouseout="this.style.opacity = '1'"
+            >
+              ★ Review {{ item.product.name|truncatechars:18 }}
+            </a>
+            
+          </div>
+          {% endif %}
+            <span class="oh-item-price">Rs.{{ item.product.price }}</span>
+            </div>
+          {% endfor %}
+        </div>
+
+        <!-- Footer -->
+        <div class="oh-card-footer">
+          <span class="oh-total-label">Order Total</span>
+          <span class="oh-total-amount">Rs.{{ order.total_cost }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="oh-empty">
+      <div class="oh-empty-icon"><ion-icon name="bag-outline"></ion-icon></div>
+      <h2>No orders yet</h2>
+      <p>
+        Looks like you haven't placed any orders. Start shopping to see them
+        here.
+      </p>
+      <a href="{% url 'store:home' %}" class="btn-shop">
+        <ion-icon name="storefront-outline"></ion-icon> Browse Products
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

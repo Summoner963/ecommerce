@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
+
+  .auth-wrapper {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    background: #fafafa;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .auth-card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.09);
+    width: 100%;
+    max-width: 460px;
+    padding: 2.8rem 2.5rem 2.5rem;
+    animation: authIn 0.4s ease both;
+  }
+  @keyframes authIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .auth-eyebrow {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #ff7d1a;
+    margin: 0 0 6px;
+  }
+  .auth-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    color: #1a1a1a;
+    margin: 0 0 1.8rem;
+    line-height: 1.1;
+  }
+
+  /* Error banner */
+  .auth-error-banner {
+    padding: 10px 14px;
+    border-radius: 9px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    background: #fff5f5;
+    color: #c53030;
+    border: 1px solid #fed7d7;
+    margin-bottom: 1.2rem;
+  }
+
+  /* Two-column grid for name+email, phone stays full */
+  .auth-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 1rem;
+  }
+  @media (max-width: 480px) { .auth-grid-2 { grid-template-columns: 1fr; } }
+
+  .auth-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 1.1rem; }
+  .auth-field label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #444;
+    letter-spacing: 0.3px;
+  }
+  .auth-field input,
+  .auth-field textarea {
+    padding: 11px 14px;
+    border: 1.5px solid #e8e8e8;
+    border-radius: 10px;
+    font-size: 0.92rem;
+    font-family: 'DM Sans', sans-serif;
+    color: #1a1a1a;
+    background: #fafafa;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  }
+  .auth-field textarea {
+    resize: vertical;
+    min-height: 80px;
+    line-height: 1.5;
+  }
+  .auth-field input:focus,
+  .auth-field textarea:focus {
+    border-color: #ff7d1a;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(255,125,26,0.12);
+  }
+  .auth-field input.field-error { border-color: #e53e3e; }
+
+  /* Password strength bar */
+  .pw-strength-bar {
+    height: 3px;
+    border-radius: 3px;
+    background: #eee;
+    margin-top: 5px;
+    overflow: hidden;
+  }
+  .pw-strength-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 3px;
+    transition: width 0.3s, background 0.3s;
+  }
+  .pw-hint { font-size: 0.73rem; color: #aaa; margin-top: 4px; }
+
+  /* Inline validation message */
+  .field-msg {
+    font-size: 0.75rem;
+    min-height: 16px;
+    margin-top: -4px;
+    margin-bottom: 2px;
+  }
+  .field-msg.err { color: #e53e3e; }
+  .field-msg.ok  { color: #38a169; }
+
+  /* Form-level error */
+  .form-error-msg {
+    font-size: 0.82rem;
+    color: #e53e3e;
+    font-weight: 600;
+    min-height: 18px;
+    margin-bottom: 0.6rem;
+    text-align: center;
+  }
+
+  .auth-submit {
+    width: 100%;
+    padding: 13px;
+    background: #ff7d1a;
+    color: #fff;
+    border: none;
+    border-radius: 11px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    margin-top: 0.2rem;
+    box-shadow: 0 4px 14px rgba(255,125,26,0.35);
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .auth-submit:hover  { opacity: 0.9; transform: translateY(-1px); }
+  .auth-submit:active { transform: translateY(0); }
+
+  .auth-divider { height: 1px; background: #f0f0f0; margin: 1.6rem 0; }
+  .auth-footer  { text-align: center; margin-top: 0; font-size: 0.85rem; color: #888; }
+  .auth-footer a { color: #ff7d1a; font-weight: 700; text-decoration: none; }
+  .auth-footer a:hover { text-decoration: underline; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <p class="auth-eyebrow">Join us today</p>
+    <h1 class="auth-title">Create account</h1>
+
+    {% if error %}
+    <div class="auth-error-banner">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="{% url 'store:register' %}" name="signupForm" onsubmit="return validateForm();" novalidate>
+      {% csrf_token %}
+
+      <div class="auth-grid-2">
+        <div class="auth-field">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" name="name" placeholder="Jane Doe" required>
+          <span class="field-msg" id="msg-name"></span>
+        </div>
+        <div class="auth-field">
+          <label for="phone">Phone Number</label>
+          <input type="text" id="phone" name="phone" placeholder="98XXXXXXXX" required>
+          <span class="field-msg" id="msg-phone"></span>
+        </div>
+      </div>
+
+      <div class="auth-field">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" placeholder="you@example.com" required>
+        <span class="field-msg" id="msg-email"></span>
+      </div>
+
+      <div class="auth-field">
+        <label for="address">Delivery Address</label>
+        <textarea id="address" name="address" placeholder="Street, City, District…" required></textarea>
+      </div>
+
+      <div class="auth-field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="••••••••" required>
+        <div class="pw-strength-bar"><div class="pw-strength-fill" id="pw-fill"></div></div>
+        <span class="pw-hint">8–14 chars · letter · number · symbol</span>
+        <span class="field-msg" id="msg-password"></span>
+      </div>
+
+      <p class="form-error-msg" id="formError"></p>
+      <button type="submit" class="auth-submit">Create Account</button>
+    </form>
+
+    <div class="auth-divider"></div>
+    <p class="auth-footer">Already have an account? <a href="{% url 'store:login' %}">Sign in</a></p>
+  </div>
+</div>
+
+<script>
+(function () {
+  // ── Live password strength ──────────────────────────
+  const pwInput = document.getElementById('password');
+  const pwFill  = document.getElementById('pw-fill');
+  const pwMsg   = document.getElementById('msg-password');
+
+  const pwRe = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,14}$/;
+
+  pwInput.addEventListener('input', function () {
+    const v = this.value;
+    let score = 0;
+    if (v.length >= 8)  score++;
+    if (/[a-zA-Z]/.test(v)) score++;
+    if (/\d/.test(v))   score++;
+    if (/[^a-zA-Z\d]/.test(v)) score++;
+    const colors = ['#e53e3e','#f6ad55','#f6ad55','#68d391','#38a169'];
+    const labels = ['','Too short','Weak','Almost there','Strong'];
+    pwFill.style.width = (score * 25) + '%';
+    pwFill.style.background = colors[score];
+    pwMsg.textContent = v.length ? labels[score] : '';
+    pwMsg.className = 'field-msg ' + (score >= 4 ? 'ok' : score > 0 ? 'err' : '');
+  });
+
+  // ── Live field validation ───────────────────────────
+  function liveValidate(inputId, msgId, regex, errText, okText) {
+    const inp = document.getElementById(inputId);
+    const msg = document.getElementById(msgId);
+    if (!inp) return;
+    inp.addEventListener('blur', function () {
+      if (!this.value) { msg.textContent = ''; return; }
+      if (regex.test(this.value)) {
+        msg.textContent = okText; msg.className = 'field-msg ok';
+        this.classList.remove('field-error');
+      } else {
+        msg.textContent = errText; msg.className = 'field-msg err';
+        this.classList.add('field-error');
+      }
+    });
+  }
+
+  liveValidate('name',  'msg-name',  /^[a-zA-Z]+ [a-zA-Z]+$/, 'Enter first and last name', '✓ Looks good');
+  liveValidate('email', 'msg-email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format', '✓ Valid email');
+  liveValidate('phone', 'msg-phone', /^(984|980|986|985|976|975|974)\d{7}$/, 'Enter a valid NP number', '✓ Valid number');
+
+  // ── Submit validation ───────────────────────────────
+  window.validateForm = function () {
+    const name     = document.forms["signupForm"]["name"].value;
+    const email    = document.forms["signupForm"]["email"].value;
+    const password = document.forms["signupForm"]["password"].value;
+    const phone    = document.forms["signupForm"]["phone"].value;
+    const errEl    = document.getElementById('formError');
+
+    if (!/^[a-zA-Z]+ [a-zA-Z]+$/.test(name)) {
+      errEl.textContent = 'Name must contain a valid first and last name.'; return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errEl.textContent = 'Invalid email format.'; return false;
+    }
+    if (!/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,14}$/.test(password)) {
+      errEl.textContent = 'Password must be 8–14 chars with a letter, number, and special symbol.'; return false;
+    }
+    if (!/^(984|980|986|985|976|975|974)\d{7}$/.test(phone)) {
+      errEl.textContent = 'Enter a valid phone number.'; return false;
+    }
+    errEl.textContent = '';
+    return true;
+  };
+})();
+</script>
+{% endblock %}

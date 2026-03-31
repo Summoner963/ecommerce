@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="style-detail-container">
+    <!-- style Title -->
+    <h1>{{ style.name }}</h1>
+
+    <!-- Subcategories Section -->
+    {% if subcategories %}
+    <div class="subcategories">
+        <h2>Subcategories</h2>
+        <ul class="substyle-list">
+            {% for substyle in subcategories %}
+            <li class="substyle-item">
+                <a href="{% url 'store:style' substyle.slug %}">
+                    {{ substyle.name }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Products Section -->
+    <div class="product-container">
+        <h2>Products in {{ style.name }}</h2>
+        <div class="product-grid">
+            {% if products %}
+            {% for product in products %}
+            <div class="showcase">
+                <!-- Product Image -->
+                <div class="showcase-banner">
+                    <a href="{% url 'store:product' product.slug %}">
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-img">
+                    </a>
+                </div>
+
+                <!-- Product Details -->
+                <div class="showcase-content">
+                    <h3 class="showcase-title">
+                        <a href="{% url 'store:product' product.slug %}">{{ product.name }}</a>
+                    </h3>
+                    <p class="price">${{ product.price }}</p>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p>No products found in this style.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

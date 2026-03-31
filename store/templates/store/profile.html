@@ -1,0 +1,442 @@
+{% extends "base.html" %}
+{% block extra_css %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
+
+  :root {
+    --primary: #ff7d1a;
+    --primary-light: #fff4ec;
+    --primary-mid: #ffe0c4;
+    --text-dark: #1a1a1a;
+    --text-mid: #555;
+    --text-light: #999;
+    --border: #f0f0f0;
+    --radius: 14px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.07);
+  }
+
+  .profile-page {
+    background: #fafafa;
+    min-height: 70vh;
+    padding: 3rem 0 5rem;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* ── Layout ── */
+  .profile-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 1.8rem;
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    .profile-layout { grid-template-columns: 1fr; }
+  }
+
+  /* ── Shared card ── */
+  .p-card {
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    animation: cardIn 0.35s ease both;
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .p-card:nth-child(2) { animation-delay: 80ms; }
+  .p-card:nth-child(3) { animation-delay: 160ms; }
+
+  .p-card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .p-card-header ion-icon { font-size: 1.1rem; color: var(--primary); }
+  .p-card-header h3 {
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    color: #888;
+    margin: 0;
+  }
+
+  /* ── Sidebar: avatar + info ── */
+  .profile-sidebar { display: flex; flex-direction: column; gap: 1.2rem; }
+
+  .avatar-card { text-align: center; padding: 2rem 1.5rem 1.8rem; }
+  .avatar-circle {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary) 0%, #ff9a4d 100%);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1rem;
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 6px 20px rgba(255,125,26,0.35);
+  }
+  .avatar-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    color: var(--text-dark);
+    margin: 0 0 4px;
+  }
+  .avatar-email {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    margin: 0 0 1.2rem;
+    word-break: break-all;
+  }
+  .avatar-verified {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #f0fff4;
+    color: #276749;
+    border: 1px solid #c6f6d5;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+  .avatar-verified ion-icon { font-size: 0.8rem; }
+
+  /* Info rows */
+  .info-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .info-item:last-child { border-bottom: none; }
+  .info-item ion-icon { font-size: 1rem; color: var(--primary); flex-shrink: 0; }
+  .info-item-content { min-width: 0; }
+  .info-label { font-size: 0.7rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 1px; margin: 0 0 1px; }
+  .info-value { font-size: 0.88rem; font-weight: 600; color: var(--text-dark); margin: 0; word-break: break-all; }
+
+  /* Quick stats */
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .stat-item {
+    padding: 16px;
+    text-align: center;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .stat-item:nth-child(2) { border-right: none; }
+  .stat-item:nth-child(3) { border-bottom: none; }
+  .stat-item:nth-child(4) { border-right: none; border-bottom: none; }
+  .stat-num { font-size: 1.4rem; font-weight: 800; color: var(--primary); display: block; }
+  .stat-label { font-size: 0.72rem; color: var(--text-light); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ── Main column ── */
+  .profile-main { display: flex; flex-direction: column; gap: 1.2rem; }
+
+  /* Order rows */
+  .order-rows { padding: 0 20px; }
+  .order-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .order-row:last-child { border-bottom: none; }
+
+  .order-row-id {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: var(--text-dark);
+    white-space: nowrap;
+    min-width: 80px;
+  }
+  .order-row-id span { color: var(--primary); }
+
+  .order-row-meta {
+    flex: 1;
+    min-width: 0;
+  }
+  .order-row-date  { font-size: 0.78rem; color: var(--text-light); margin: 0 0 2px; }
+  .order-row-total { font-size: 0.88rem; font-weight: 700; color: var(--text-dark); margin: 0; }
+
+  /* Status pill */
+  .oh-status {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .oh-status.pending   { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+  .oh-status.shipped   { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; }
+  .oh-status.delivered { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+  .oh-status.cancelled { background: #fff5f5; color: #c53030; border: 1px solid #fed7d7; }
+
+  .order-row-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-decoration: none;
+    white-space: nowrap;
+    padding: 5px 11px;
+    border: 1.5px solid var(--primary-mid);
+    border-radius: 8px;
+    background: var(--primary-light);
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .order-row-link:hover { background: var(--primary-mid); border-color: var(--primary); }
+
+  /* View all orders btn */
+  .view-all-wrap { padding: 16px 20px; border-top: 1px solid var(--border); }
+  .view-all-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--primary); color: #fff;
+    font-weight: 700; font-size: 0.85rem;
+    padding: 10px 20px; border-radius: 9px;
+    text-decoration: none;
+    box-shadow: 0 3px 10px rgba(255,125,26,0.3);
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .view-all-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+  /* No orders */
+  .no-orders {
+    padding: 3rem 1.5rem;
+    text-align: center;
+    color: var(--text-light);
+    font-size: 0.9rem;
+  }
+  .no-orders ion-icon { font-size: 2.5rem; color: #ddd; display: block; margin: 0 auto 0.8rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+  <div class="container">
+
+    <div class="profile-layout">
+
+      <!-- ══ SIDEBAR ══ -->
+      <div class="profile-sidebar">
+
+        <!-- Avatar card -->
+        <div class="p-card avatar-card">
+          <div class="avatar-circle">{{ user.name|slice:":1"|upper }}</div>
+          <p class="avatar-name">{{ user.name }}</p>
+          <p class="avatar-email">{{ user.email }}</p>
+          {% if user.is_verified %}
+          <span class="avatar-verified">
+            <ion-icon name="checkmark-circle"></ion-icon> Verified
+          </span>
+          {% endif %}
+        </div>
+
+        <!-- Contact info -->
+        <!-- Contact info + edit form -->
+    <div class="p-card">
+        <div class="p-card-header">
+            <ion-icon name="person-outline"></ion-icon>
+            <h3>Account Info</h3>
+        </div>
+        <div class="info-row">
+            <div class="info-item">
+            <ion-icon name="mail-outline"></ion-icon>
+            <div class="info-item-content">
+                <p class="info-label">Email</p>
+                <p class="info-value">{{ user.email }}</p>
+            </div>
+            </div>
+        </div>
+
+        <!-- Editable form -->
+        <form method="post" action="{% url 'store:profile' %}" style="padding: 14px 20px; display:flex; flex-direction:column; gap:12px;">
+            {% csrf_token %}
+
+            <div>
+            <label style="font-size:0.7rem;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">
+                Phone
+            </label>
+            <input type="text" name="phone" value="{{ user.phone }}"
+                    placeholder="Enter phone number"
+                    style="width:100%;padding:9px 12px;border:1.5px solid #eee;border-radius:8px;font-size:0.88rem;font-family:inherit;outline:none;transition:border-color 0.15s;"
+                    onfocus="this.style.borderColor='#ff7d1a'" onblur="this.style.borderColor='#eee'">
+            </div>
+
+            <div>
+            <label style="font-size:0.7rem;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">
+                Address
+            </label>
+            <textarea name="address" rows="3" placeholder="Enter delivery address"
+                        style="width:100%;padding:9px 12px;border:1.5px solid #eee;border-radius:8px;font-size:0.88rem;font-family:inherit;outline:none;resize:vertical;transition:border-color 0.15s;"
+                        onfocus="this.style.borderColor='#ff7d1a'" onblur="this.style.borderColor='#eee'">{{ user.address }}</textarea>
+            </div>
+
+            <button type="submit"
+                    style="align-self:flex-start;padding:9px 22px;background:#ff7d1a;color:#fff;border:none;border-radius:9px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.15s;"
+                    onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">
+            Save Changes
+            </button>
+        </form>
+    </div>
+
+        <!-- Quick stats -->
+        <div class="p-card">
+          <div class="p-card-header">
+            <ion-icon name="stats-chart-outline"></ion-icon>
+            <h3>Stats</h3>
+          </div>
+          <div class="stats-row">
+            <div class="stat-item">
+              <span class="stat-num">{{ orders|length }}</span>
+              <span class="stat-label">Orders</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-num">{{ wishlist.products.count }}</span>
+              <span class="stat-label">Wishlist</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-num">{{ delivered_count|default:0 }}</span>
+                <span class="stat-label">Delivered</span>
+            </div>
+
+            <div class="stat-item">
+                <span class="stat-num">{{ pending_count|default:0 }}</span>
+                <span class="stat-label">Pending</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-num">{{ shipping_count|default:0 }}</span>
+                <span class="stat-label">Shipping</span>
+            </div>
+
+            <div class="stat-item">
+                <span class="stat-num">{{ canceled_count|default:0 }}</span>
+                <span class="stat-label">Cancelled</span>
+            </div>
+
+          </div>
+        </div>
+
+      </div><!-- /sidebar -->
+
+      <!-- ══ MAIN ══ -->
+      <div class="profile-main">
+
+        <!-- Order history card -->
+        <div class="p-card">
+          <div class="p-card-header">
+            <ion-icon name="receipt-outline"></ion-icon>
+            <h3>Recent Orders</h3>
+          </div>
+
+          {% if orders %}
+          <div class="order-rows">
+            {% for order in orders|slice:":5" %}
+            <div class="order-row">
+              <span class="order-row-id">Order <span>#{{ order.id }}</span></span>
+              <div class="order-row-meta">
+                <p class="order-row-date">{{ order.created_at|date:"M d, Y" }}</p>
+                <p class="order-row-total">Rs.{{ order.total_cost }}</p>
+                <p class="order-row-date" style="margin-top:2px;">
+                    {{ order.items.count }} item{{ order.items.count|pluralize }} · {{ order.payment_method|upper }}
+                </p>
+              </div>
+              <span class="oh-status {% if order.status == 'P' %}pending{% elif order.status == 'S' %}shipped{% elif order.status == 'D' %}delivered{% elif order.status == 'C' %}cancelled{% endif %}">
+                {{ order.get_status_display }}
+              </span>
+              <a href="{% url 'store:order_history' %}" class="order-row-link">
+                View <ion-icon name="arrow-forward-outline"></ion-icon>
+              </a>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="view-all-wrap">
+            <a href="{% url 'store:order_history' %}" class="view-all-btn">
+              <ion-icon name="list-outline"></ion-icon> View All Orders
+            </a>
+          </div>
+          {% else %}
+          <div class="no-orders">
+            <ion-icon name="bag-outline"></ion-icon>
+            No orders yet. Start shopping!
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Wishlist summary card -->
+        <div class="p-card">
+          <div class="p-card-header">
+            <ion-icon name="heart-outline"></ion-icon>
+            <h3>Wishlist</h3>
+          </div>
+          {% if wishlist and wishlist.products.count %}
+          <div class="order-rows">
+            {% for product in wishlist.products.all|slice:":4" %}
+            <div class="order-row">
+              <img src="{{ product.image.url }}" alt="{{ product.name }}"
+                   style="width:44px;height:44px;object-fit:contain;border-radius:8px;background:#f7f7f7;padding:3px;flex-shrink:0;">
+              <div class="order-row-meta">
+                    <p class="order-row-date">
+                    {{ product.style.name }}
+                    {% if product.brand %} · {{ product.brand.name }}{% endif %}
+                    </p>
+                    <!-- Colors preview dots -->
+                    {% if product.colors.exists %}
+                    <div style="display:flex;gap:3px;margin-top:3px;">
+                    {% for color in product.colors.all|slice:":4" %}
+                    <span style="width:9px;height:9px;border-radius:50%;background:{{ color.hex_code }};border:1px solid #ddd;display:inline-block;" title="{{ color.name }}"></span>
+                    {% endfor %}
+                    </div>
+                    {% endif %}
+                    <p class="order-row-total" style="font-size:0.88rem;">{{ product.name }}</p>
+                    <p class="order-row-date" style="margin-top:1px;">
+                    {% if product.material %}{{ product.material.name }}{% endif %}
+                    {% if product.sizes.exists %} · {{ product.sizes.first.value }}{{ product.sizes.first.unit }}{% endif %}
+                    </p>
+              </div>
+              <span style="font-size:0.9rem;font-weight:800;color:var(--text-dark);white-space:nowrap;">Rs.{{ product.price }}</span>
+              <a href="{% url 'store:product' product.slug %}" class="order-row-link">
+                View <ion-icon name="arrow-forward-outline"></ion-icon>
+              </a>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="view-all-wrap">
+            <a href="{% url 'store:view_wishlist' %}" class="view-all-btn" style="background:#1a1a1a;box-shadow:none;">
+              <ion-icon name="heart-outline"></ion-icon> View Wishlist
+            </a>
+          </div>
+          {% else %}
+          <div class="no-orders">
+            <ion-icon name="heart-outline"></ion-icon>
+            Your wishlist is empty.
+          </div>
+          {% endif %}
+        </div>
+
+      </div><!-- /main -->
+    </div>
+
+  </div>
+</div>
+{% endblock %}

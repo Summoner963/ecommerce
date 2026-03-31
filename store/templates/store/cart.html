@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% load static %}
+{% load store_extras %}
+{% block title %}Your Cart{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --primary: #ff7d1a;
+    --dark: #1d2025;
+    --gray: #68707d;
+    --border: #e8e8e8;
+    --bg-light: #f8f9fb;
+  }
+
+  /* ── Page Layout ── */
+  .cart-wrapper {
+    max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem;
+    display: grid; grid-template-columns: 1fr 360px;
+    gap: 2rem; align-items: start;
+  }
+  .cart-wrapper h2 {
+    font-size: 1.8rem; font-weight: 800; color: var(--dark);
+    margin-bottom: 1.5rem; grid-column: 1 / -1;
+  }
+
+  /* ── Cart Items Panel ── */
+  .cart-items-panel {
+    background: #fff; border-radius: 16px; border: 1px solid var(--border);
+    overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+  }
+  .cart-item {
+    display: grid;
+    grid-template-columns: 90px 1fr auto auto auto;
+    gap: 1rem; align-items: center;
+    padding: 1.2rem 1.5rem; border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .cart-item:last-child { border-bottom: none; }
+  .cart-item:hover { background: var(--bg-light); }
+
+  /* Image */
+  .item-image img {
+    width: 80px; height: 80px; object-fit: contain;
+    border-radius: 10px; border: 1px solid var(--border); background: var(--bg-light);
+  }
+
+  /* Details */
+  .item-details h3 { font-size: 0.95rem; font-weight: 700; color: var(--dark); margin: 0 0 0.4rem; }
+
+  /* Color row */
+  .item-color-row {
+    display: flex; align-items: center; gap: 7px;
+    color: var(--gray); font-size: 0.82rem; margin-bottom: 3px;
+  }
+  .item-color-swatch {
+    width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; display: inline-block;
+    /* box-shadow ring is always visible for ANY color — black, white, yellow */
+    box-shadow: 0 0 0 1.5px rgba(0,0,0,0.22);
+  }
+  .item-color-name { font-weight: 600; }
+
+  /* Size row */
+  .item-size-row {
+    display: flex; align-items: center; gap: 6px;
+    color: var(--gray); font-size: 0.82rem; margin-bottom: 3px;
+  }
+  .item-size-row ion-icon { font-size: 0.85rem; color: #bbb; }
+
+  .item-price { font-size: 0.88rem; color: var(--gray); margin-top: 2px; }
+
+  /* Quantity controls */
+  .item-quantity { display: flex; align-items: center; gap: 0.5rem; }
+  .qty-btn {
+    width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+    border-radius: 8px; text-decoration: none; font-weight: 700;
+    background: var(--bg-light); color: var(--dark); font-size: 1rem;
+    border: 1px solid var(--border); transition: background 0.2s, color 0.2s;
+  }
+  .qty-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .qty-display { min-width: 36px; text-align: center; font-weight: 700; color: var(--dark); }
+
+  /* Item total */
+  .item-total { font-weight: 700; color: var(--dark); font-size: 0.95rem; text-align: right; white-space: nowrap; }
+
+  /* Remove */
+  .remove-btn {
+    width: 32px; height: 32px; border: none; background: none;
+    cursor: pointer; color: #bbb; font-size: 1.3rem;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 8px; transition: color 0.2s, background 0.2s; text-decoration: none;
+  }
+  .remove-btn:hover { color: #e53e3e; background: #fff5f5; }
+
+  /* ── Order Summary Sidebar ── */
+  .cart-sidebar { position: sticky; top: 1.5rem; }
+  .summary-card {
+    background: #fff; border-radius: 16px; border: 1px solid var(--border);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05); overflow: hidden;
+  }
+  .summary-header { padding: 1.2rem 1.5rem; background: var(--dark); color: #fff; font-weight: 700; font-size: 1rem; }
+  .summary-body { padding: 1.5rem; }
+  .summary-row { display: flex; justify-content: space-between; margin-bottom: 0.9rem; color: var(--gray); font-size: 0.9rem; }
+  .summary-row.total {
+    border-top: 1px solid var(--border); padding-top: 0.9rem; margin-top: 0.5rem;
+    font-weight: 800; color: var(--dark); font-size: 1.05rem;
+  }
+
+  /* Payment Buttons */
+  .payment-buttons { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
+  .payment-section-label { font-size: 0.78rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.2rem; }
+  .btn-stripe {
+    display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+    width: 100%; padding: 13px; border: none; border-radius: 10px;
+    background: #635bff; color: #fff; font-size: 0.95rem; font-weight: 700;
+    cursor: pointer; font-family: inherit; transition: all 0.2s;
+  }
+  .btn-stripe:hover { background: #4f47e5; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(99,91,255,0.35); }
+  .btn-esewa {
+    display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+    width: 100%; padding: 13px; border: none; border-radius: 10px;
+    background: #60bb46; color: #fff; font-size: 0.95rem; font-weight: 700;
+    cursor: pointer; font-family: inherit; text-decoration: none; transition: all 0.2s;
+  }
+  .btn-esewa:hover { background: #4fa33a; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(96,187,70,0.35); }
+  .btn-khalti {
+    display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+    width: 100%; padding: 13px; border: none; border-radius: 10px;
+    background: #5c2d91; color: #fff; font-size: 0.95rem; font-weight: 700;
+    cursor: pointer; font-family: inherit; text-decoration: none; transition: all 0.2s;
+  }
+  .btn-khalti:hover { background: #4a2278; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(92,45,145,0.35); }
+  .divider { text-align: center; color: var(--gray); font-size: 0.78rem; margin: 0.2rem 0; }
+  .secure-note {
+    text-align: center; color: var(--gray); font-size: 0.78rem; margin-top: 0.8rem;
+    display: flex; align-items: center; justify-content: center; gap: 0.3rem;
+  }
+
+  /* ── Empty Cart ── */
+  .empty-cart {
+    grid-column: 1 / -1; text-align: center; padding: 5rem 2rem;
+    background: #fff; border-radius: 16px; border: 1px solid var(--border);
+  }
+  .empty-icon { font-size: 4rem; margin-bottom: 1.5rem; }
+  .empty-cart h3 { font-size: 1.4rem; font-weight: 700; color: var(--dark); margin-bottom: 0.6rem; }
+  .empty-cart p { color: var(--gray); margin-bottom: 2rem; }
+  .btn-shop { display: inline-block; padding: 12px 28px; background: var(--primary); color: #fff; border-radius: 10px; text-decoration: none; font-weight: 700; transition: background 0.2s; }
+  .btn-shop:hover { background: #e06b0f; }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .cart-wrapper { grid-template-columns: 1fr; }
+    .cart-sidebar { position: static; }
+    .cart-item { grid-template-columns: 70px 1fr; gap: 0.8rem; }
+    .item-quantity, .item-total, .item-actions { grid-column: 2; }
+  }
+  @media (max-width: 480px) {
+    .cart-item { gap: 0.6rem; padding: 1rem; }
+    .item-image img { width: 64px; height: 64px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cart-wrapper">
+  <h2>Your Shopping Cart</h2>
+
+  {% if order_items %}
+
+  <div class="cart-items-panel">
+    {% for entry in order_items %}
+    {% with item=entry.item %}
+    <div class="cart-item">
+
+      <!-- Image: color-specific front image -->
+      <div class="item-image">
+        <a href="{% url 'store:product' item.product.slug %}{% if item.color %}?color={{ item.color.id }}{% endif %}">
+          <img src="{{ entry.image_url }}" alt="{{ item.product.name }}" />
+        </a>
+      </div>
+
+      <!-- Details -->
+      <div class="item-details">
+        <h3>
+          <a href="{% url 'store:product' item.product.slug %}{% if item.color %}?color={{ item.color.id }}{% endif %}"
+             style="text-decoration:none;color:inherit;">
+            {{ item.product.name }}
+          </a>
+        </h3>
+
+        {# ── Color: swatch dot + name ── #}
+        {% if item.color %}
+        <div class="item-color-row">
+          <span class="item-color-swatch"
+                style="background:{{ item.color.hex_code|default:'#eeeeee' }};">
+          </span>
+          <span class="item-color-name">{{ item.color.name }}</span>
+        </div>
+        {% endif %}
+
+        {# ── Size ── #}
+        {% if entry.size_label %}
+        <div class="item-size-row">
+          <ion-icon name="resize-outline"></ion-icon>
+          <span>{{ entry.size_label }}</span>
+        </div>
+        {% endif %}
+
+        <div class="item-price">Rs.{{ item.product.price }} each</div>
+      </div>
+
+          <!-- Quantity controls -->
+          <div class="item-quantity">
+            <a href="{% url 'store:update_cart' item.product.id 'decrease' %}{{ entry.combo_qs }}"
+              class="qty-btn" title="Decrease">−</a>
+            <span class="qty-display">{{ item.quantity }}</span>
+            <a href="{% url 'store:update_cart' item.product.id 'increase' %}{{ entry.combo_qs }}"
+              class="qty-btn" title="Increase">+</a>
+          </div>
+
+          <!-- Line total -->
+          <div class="item-total">Rs.{{ item.product.price|multiply:item.quantity }}</div>
+
+          <!-- Remove -->
+          <a href="{% url 'store:update_cart' item.product.id 'remove' %}{{ entry.combo_qs }}"
+            class="remove-btn" title="Remove item">×</a>
+              </div>
+              {% endwith %}
+              {% endfor %}
+            </div>
+
+  <!-- Sidebar -->
+  <div class="cart-sidebar">
+    <div class="summary-card">
+      <div class="summary-header">Order Summary</div>
+      <div class="summary-body">
+        <div class="summary-row"><span>Subtotal</span><span>Rs.{{ total_price }}</span></div>
+        <div class="summary-row"><span>Shipping</span><span>Calculated at checkout</span></div>
+        <div class="summary-row total"><span>Total</span><span>Rs.{{ total_price }}</span></div>
+
+        <div class="payment-buttons">
+          <div class="payment-section-label">Choose Payment Method</div>
+          {% comment %} <button id="checkout-button" class="btn-stripe">💳 Pay with Stripe</button>
+          <div class="divider">— or —</div> {% endcomment %}
+          <a href="{% url 'store:initiate_esewa' %}" class="btn-esewa">🟢 Pay with eSewa</a>
+          <div class="divider">— or —</div>
+          <a href="{% url 'store:initiate_khalti' %}" class="btn-khalti">🟣 Pay with Khalti</a>
+          <div class="secure-note">🔒 All payments are 100% secure</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="empty-cart">
+    <div class="empty-icon">🛒</div>
+    <h3>Your cart is empty!</h3>
+    <p>Looks like you haven't added any items yet. Start shopping to fill it up.</p>
+    <a href="{% url 'store:home' %}" class="btn-shop">Continue Shopping</a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const checkoutBtn = document.getElementById('checkout-button');
+  if (!checkoutBtn) return;
+
+  const stripe = Stripe(
+    '{{ stripe_public_key|default:"pk_test_51QirbH2Q45y46jReaDBqNwHhBKnbUlN2GIIZxnyI0gYiGar7qMEtDtEpIImiDknvvG1JhIHCqLj61z6evDRU80Ra00nAnGoLDa" }}'
+  );
+
+  checkoutBtn.addEventListener('click', function () {
+    this.disabled = true;
+    this.textContent = 'Redirecting…';
+    fetch("{% url 'store:create_checkout_session' %}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.id) {
+        stripe.redirectToCheckout({ sessionId: data.id });
+      } else {
+        alert(data.error || 'Something went wrong. Please try again.');
+        checkoutBtn.disabled = false;
+        checkoutBtn.innerHTML = '💳 Pay with Stripe';
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert('Network error. Please try again.');
+      checkoutBtn.disabled = false;
+      checkoutBtn.innerHTML = '💳 Pay with Stripe';
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %} {% load static %}
+{% block title %}Pay with Khalti{% endblock %} {% block extra_css %}
+<style>
+  .payment-gateway-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    flex-direction: column;
+    gap: 1.5rem;
+    text-align: center;
+    padding: 2rem;
+  }
+  .payment-gateway-page img {
+    width: 180px;
+    margin-bottom: 1rem;
+  }
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 5px solid #e8e8e8;
+    border-top-color: #5C2D91;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .gateway-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #333;
+  }
+  .gateway-sub {
+    color: #666;
+    font-size: 0.95rem;
+  }
+  .gateway-error {
+    color: #e53e3e;
+    background: #fdecea;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 0.95rem;
+    display: none;
+  }
+</style>
+{% endblock %} {% block content %}
+
+<div class="payment-gateway-page">
+  <div class="gateway-title">Redirecting to Khalti…</div>
+  <div class="spinner" id="spinner"></div>
+  <p class="gateway-sub">
+    Please wait while we redirect you to Khalti. Do not refresh this page.
+  </p>
+  <p class="gateway-error" id="gateway-error"></p>
+</div>
+
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const paymentUrl  = "{{ payment_url }}";   // passed from view: Khalti's payment_url from initiation response
+    const errorEl     = document.getElementById("gateway-error");
+    const spinner     = document.getElementById("spinner");
+
+    if (!paymentUrl) {
+      spinner.style.display = "none";
+      errorEl.style.display = "block";
+      errorEl.textContent   = "Payment could not be initiated. Please go back and try again.";
+      return;
+    }
+
+    // Redirect to Khalti's hosted checkout page after a short delay
+    setTimeout(function () {
+      window.location.href = paymentUrl;
+    }, 800);
+  });
+</script>
+{% endblock %}

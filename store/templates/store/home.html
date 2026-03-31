@@ -1,0 +1,1019 @@
+{% extends "base.html" %}
+{% load store_extras %}
+{% load static %}
+
+{% block content %}
+<div class="banner">
+  <div class="container">
+    <div class="slider-container has-scrollbar">
+      {% for offer in offers %}
+      <div class="slider-item">
+        <img src="{{ offer.product.image.url }}" alt="{{ offer.product.name }}" width="200" class="banner-img" />
+        <div class="banner-content">
+          <p class="banner-subtitle">Offer item</p>
+          <h2 class="banner-title">{{ offer.title }}</h2>
+          <p class="banner-text">Discount: {{ offer.discount_percentage }}%</p>
+          <p class="banner-text">Valid Until: {{ offer.valid_until }}</p>
+          <a href="{% url 'store:product' offer.product.slug %}" class="banner-btn">Shop now</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+/* ══════════════════════════════════════════════════════
+   HOME PAGE — FULLY RESPONSIVE LAYOUT
+   Desktop ≥1024px : sidebar permanently on left
+   Tablet  768–1023: sidebar hidden, slides in as drawer
+   Mobile  <768px  : same drawer + 2-col compact grid
+══════════════════════════════════════════════════════ */
+
+/* ── Outer wrapper replaces .product-container ── */
+.hp-wrap {
+  max-width: 1560px;
+  margin: 0 auto;
+  padding: 28px 24px 80px;
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+}
+
+/* ══ SIDEBAR ══ */
+.hp-sidebar {
+  width: 272px;
+  flex-shrink: 0;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.07);
+  position: sticky;
+  top: 84px;
+  max-height: calc(100vh - 104px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #eee transparent;
+}
+.hp-sidebar::-webkit-scrollbar { width: 3px; }
+.hp-sidebar::-webkit-scrollbar-thumb { background: #e8e8e8; border-radius: 4px; }
+
+.sidebar-head {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #f2f2f2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 2;
+  border-radius: 16px 16px 0 0;
+}
+.sidebar-head h2 {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: #1a1a1a;
+  margin: 0;
+}
+.sidebar-close-x {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #aaa;
+  font-size: 1.3rem;
+  padding: 0;
+  line-height: 1;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ══ FILTER SECTIONS — ENHANCED ══ */
+.filter-section {
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  /* no extra margin/padding so sections sit flush */
+}
+.filter-section:last-of-type { border-bottom: none; }
+
+.filter-toggle {
+  width: 100%;
+  background: none;
+  border: none;
+  margin: 0;
+  /* Reduced vertical padding so sections feel compact and even */
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  gap: 1px;
+  transition: background 0.15s;
+  font-family: inherit;
+}
+.filter-toggle:hover { background: #fafafa; }
+
+.filter-title {
+  font-size: 0.69rem;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  /* Slightly darker so the labels feel more present */
+  color: #888;
+  margin: 0;
+}
+.ftgl-icon {
+  font-size: 0.62rem;
+  color: #ccc;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.filter-section.open .ftgl-icon { transform: rotate(180deg); }
+
+.filter-body {
+  display: none;
+  /* Tighter padding top, a little breathing room at bottom */
+  padding: 2px 15px 10px;
+}
+.filter-section.open .filter-body { display: block; }
+
+/* Checkboxes */
+.fcl { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+.cat-label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-size: 0.855rem;
+  color: #333;
+  user-select: none;
+  position: relative;
+}
+.cat-label:hover { background: #fff5ee; color: #ff7d1a; }
+.cat-label input[type="checkbox"] { position: absolute; opacity: 0; width: 0; height: 0; }
+.chk-box {
+  width: 15px;
+  height: 15px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  position: relative;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cat-label.is-checked .chk-box { background: #ff7d1a; border-color: #ff7d1a; }
+.chk-box::after {
+  content: '';
+  width: 7px;
+  height: 4px;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(-45deg) translateY(-1px);
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.cat-label.is-checked .chk-box::after { opacity: 1; }
+.cat-label.is-checked .cat-name { color: #ff7d1a; }
+.cat-label.is-checked .cat-cnt { background: #fff0e5; color: #ff7d1a; }
+.cat-name { flex: 1; font-weight: 600; font-size: 0.855rem; line-height: 1.3; }
+.cat-cnt {
+  font-size: 0.67rem;
+  color: #bbb;
+  background: #f5f5f5;
+  border-radius: 20px;
+  padding: 1px 7px;
+  font-weight: 600;
+  min-width: 22px;
+  text-align: center;
+}
+.cat-label:hover .cat-cnt { background: #fff0e5; color: #ff7d1a; }
+.cat-icon { width: 16px; height: 16px; object-fit: contain; border-radius: 3px; opacity: 0.7; }
+.color-dot-f {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1.5px rgba(0,0,0,0.18);
+}
+
+/* Price slider */
+.price-inps { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.price-inps span { color: #ddd; font-weight: 700; }
+.price-inps input[type="number"] {
+  width: 70px;
+  padding: 6px 7px;
+  border: 1.5px solid #eee;
+  border-radius: 7px;
+  font-size: 0.78rem;
+  color: #333;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.15s;
+  background: #fafafa;
+  font-family: inherit;
+}
+.price-inps input[type="number"]:focus { border-color: #ff7d1a; background: #fff; }
+.slider-trk { position: relative; height: 4px; background: #eee; border-radius: 5px; margin: 8px 0 6px; }
+.slider-trk .progress { position: absolute; height: 100%; background: linear-gradient(90deg, #ff7d1a, #ffaa55); border-radius: 5px; }
+.range-inps { position: relative; height: 18px; }
+.range-inps input[type="range"] {
+  position: absolute; width: 100%; height: 4px; top: 50%;
+  transform: translateY(-50%); background: none; pointer-events: none;
+  -webkit-appearance: none; appearance: none; outline: none; border: none; margin: 0; padding: 0;
+}
+.range-inps input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%;
+  background: #fff; pointer-events: auto; cursor: pointer;
+  border: 2.5px solid #ff7d1a; box-shadow: 0 1px 6px rgba(255,125,26,0.3);
+  transition: transform 0.1s;
+}
+.range-inps input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+.range-inps input[type="range"]::-moz-range-thumb {
+  height: 16px; width: 16px; border-radius: 50%; background: #fff;
+  pointer-events: auto; cursor: pointer; border: 2.5px solid #ff7d1a;
+}
+.range-inps .range-min { z-index: 2; }
+.range-inps .range-max { z-index: 1; }
+
+.f-select {
+  width: 100%;
+  padding: 8px 28px 8px 10px;
+  border: 1.5px solid #eee;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: #333;
+  background: #fafafa url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%23bbb' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+.f-select:focus { border-color: #ff7d1a; background-color: #fff; }
+
+.filter-btns { padding: 14px 20px 10px; display: flex; flex-direction: column; gap: 8px; }
+.btn-f-apply {
+  width: 100%; padding: 10px; background: #ff7d1a; color: #fff;
+  border: none; border-radius: 9px; font-size: 0.82rem; font-weight: 700;
+  cursor: pointer; letter-spacing: 0.4px; transition: opacity 0.15s, transform 0.1s;
+  box-shadow: 0 3px 10px rgba(255,125,26,0.28); font-family: inherit;
+}
+.btn-f-apply:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-f-reset {
+  width: 100%; padding: 9px; background: #f4f4f4; color: #666;
+  border: none; border-radius: 9px; font-size: 0.8rem; font-weight: 600;
+  cursor: pointer; transition: background 0.15s; font-family: inherit;
+}
+.btn-f-reset:hover { background: #eaeaea; }
+
+/* ══ MOBILE FILTER OVERLAY ══ */
+#flt-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 800;
+  backdrop-filter: blur(2px);
+}
+#flt-overlay.open { display: block; }
+
+/* ══ MOBILE FILTER BAR (shown ≤1023px) ══ */
+.mob-filter-bar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  position: sticky;
+  top: 0;
+  z-index: 99;
+}
+.btn-open-flt {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  background: #fff;
+  border: 1.5px solid #e8e8e8;
+  border-radius: 30px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #333;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.btn-open-flt:hover { border-color: #ff7d1a; color: #ff7d1a; background: #fff5ee; }
+.btn-open-flt ion-icon { font-size: 0.95rem; }
+.flt-badge {
+  display: none;
+  background: #ff7d1a;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  border-radius: 20px;
+  padding: 1px 6px;
+  margin-left: 2px;
+  vertical-align: middle;
+}
+.flt-badge.on { display: inline; }
+.mob-res-count {
+  font-size: 0.8rem;
+  color: #bbb;
+  font-weight: 600;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ══ MAIN COLUMN ══ */
+.hp-main {
+  flex: 1;
+  min-width: 0;
+}
+.hp-main-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.hp-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin: 0;
+}
+.res-count {
+  font-size: 0.8rem;
+  color: #bbb;
+  font-weight: 600;
+}
+
+/* Filter pills */
+.active-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff5ee;
+  color: #ff7d1a;
+  border: 1px solid #ffd4b2;
+  border-radius: 20px;
+  padding: 3px 10px 3px 11px;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+.pill a { color: #ffaa70; font-size: 0.82rem; text-decoration: none; margin-left: 2px; }
+.pill a:hover { color: #ff7d1a; }
+
+/* ══ PRODUCT GRID ══ */
+.hp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+/* ── Product card ── */
+.showcase {
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  cursor: pointer;
+}
+.showcase:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 32px rgba(0,0,0,0.12);
+}
+.showcase-banner {
+  position: relative;
+  height: 240px;
+  background: #f7f8fa;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.showcase-banner > a { display: block; width: 100%; height: 100%; }
+.card-main-img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  transition: transform 0.35s ease;
+  display: block;
+}
+.showcase:hover .card-main-img { transform: scale(1.05); }
+
+.showcase-badge {
+  position: absolute; top: 12px; left: 12px;
+  background: #22c55e; color: #fff;
+  font-size: 0.68rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 20px; z-index: 3; margin: 0;
+}
+.btn-wl {
+  position: absolute; top: 10px; right: 10px;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(255,255,255,0.92); border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: background 0.15s, transform 0.15s, color 0.15s;
+  color: #ccc; font-size: 1rem;
+}
+.btn-wl:hover { background: #fff; color: #e53e3e; transform: scale(1.1); }
+.btn-wl.in-wishlist { color: #e53e3e; background: #fff5f5; }
+.btn-wl ion-icon { pointer-events: none; font-size: 1rem; }
+
+.oos-overlay {
+  position: absolute; inset: 0;
+  background: rgba(255,255,255,0.75);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 5; pointer-events: none;
+}
+.oos-badge {
+  background: #e53e3e; color: #fff;
+  font-size: 0.7rem; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 5px 14px; border-radius: 30px;
+}
+.showcase.out-of-stock .showcase-title { color: #ccc; }
+.showcase.out-of-stock .price          { color: #ccc; }
+
+.showcase-content { padding: 13px 15px 15px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
+.showcase-style {
+  font-size: 0.66rem; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; color: #ff7d1a; text-decoration: none; display: block;
+}
+.showcase-title {
+  font-size: 0.9rem; font-weight: 700; color: #1a1a1a; margin: 0;
+  line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.card-title-link { text-decoration: none; }
+.card-title-link:hover .showcase-title { color: #ff7d1a; }
+
+.card-color-dots { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.card-color-dot {
+  width: 12px; height: 12px; border-radius: 50%; cursor: pointer; flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.14);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.card-color-dot:hover, .card-color-dot.active {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 0.5px #fff, 0 0 0 2px #ff7d1a;
+}
+.card-color-count { font-size: 0.67rem; color: #ccc; font-weight: 600; }
+
+.showcase-meta { display: flex; flex-wrap: wrap; gap: 4px; }
+.meta-tag { font-size: 0.63rem; font-weight: 700; border-radius: 5px; padding: 2px 7px; }
+.meta-tag.brand    { background: #eef4ff; color: #4a80d4; }
+.meta-tag.material { background: #f0fdf4; color: #3a9e5f; }
+
+.showcase-rating { display: flex; align-items: center; gap: 2px; }
+.showcase-rating ion-icon { font-size: 0.78rem; color: #f5a623; }
+.showcase-rating p { color: #bbb; font-size: 0.74rem; margin: 0 0 0 3px; }
+
+.price-box { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+.price { font-size: 0.98rem; font-weight: 800; color: #1a1a1a; margin: 0; }
+del { font-size: 0.8rem; color: #ccc; }
+
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+══════════════════════════════════════════════════════ */
+
+/* Wide desktop: 4-col grid */
+@media (min-width: 1400px) {
+  .hp-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* Standard desktop 1024–1399: 3-col (default) */
+@media (min-width: 1024px) and (max-width: 1399px) {
+  .hp-grid { grid-template-columns: repeat(3, 1fr); }
+  .hp-sidebar { width: 250px; }
+}
+
+/* Tablet / small laptop ≤1023px */
+@media (max-width: 1023px) {
+  /* Page becomes single-column, no gap */
+  .hp-wrap { padding: 0 0 80px; gap: 0; }
+
+  /* Sidebar becomes fixed slide-in drawer */
+  .hp-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: -100% !important;
+    width: min(320px, 88vw) !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    border-radius: 0 !important;
+    z-index: 900 !important;
+    box-shadow: 4px 0 32px rgba(0,0,0,0.2) !important;
+    transition: left 0.3s cubic-bezier(0.4,0,0.2,1) !important;
+  }
+  .hp-sidebar.open { left: 0 !important; }
+  .hp-sidebar .sidebar-head { border-radius: 0 !important; }
+  .sidebar-close-x { display: flex !important; }
+
+  /* Show mobile filter bar */
+  .mob-filter-bar { display: flex; }
+
+  /* Main full width */
+  .hp-main { padding: 0 16px; }
+  .hp-main-hdr { padding-top: 16px; }
+  .hp-main-hdr .res-count { display: none; }
+
+  /* 2-column grid */
+  .hp-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .showcase-banner { height: 210px; }
+}
+
+/* Medium tablet 600–768px */
+@media (max-width: 768px) {
+  .hp-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .showcase-banner { height: 190px; }
+  .showcase-content { padding: 11px 13px 13px; gap: 4px; }
+  .showcase-title { font-size: 0.86rem; }
+  .price { font-size: 0.92rem; }
+}
+
+/* Mobile phones ≤560px */
+@media (max-width: 560px) {
+  .hp-main { padding: 0 10px; }
+  .mob-filter-bar { padding: 10px 10px; }
+  .hp-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .showcase-banner { height: 170px; }
+  .showcase-content { padding: 10px 11px 12px; gap: 3px; }
+  .showcase-title { font-size: 0.82rem; }
+  .price { font-size: 0.88rem; }
+  del { font-size: 0.74rem; }
+  .showcase-meta { display: none; } /* hide on tiny screens to save space */
+}
+
+/* Very small ≤380px */
+@media (max-width: 380px) {
+  .hp-grid { gap: 8px; }
+  .showcase-banner { height: 155px; }
+  .hp-main { padding: 0 8px; }
+}
+</style>
+
+<!-- Filter overlay (mobile) -->
+<div id="flt-overlay"></div>
+
+<!-- Mobile filter bar (hidden on desktop) -->
+<div class="mob-filter-bar">
+  <button class="btn-open-flt" id="open-flt-btn">
+    <ion-icon name="options-outline"></ion-icon>
+    Filters
+    <span class="flt-badge" id="flt-badge"></span>
+  </button>
+  <span class="mob-res-count">{{ enriched_products|length }} item{{ enriched_products|length|pluralize }}</span>
+</div>
+
+<div class="hp-wrap">
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="hp-sidebar" id="hp-sidebar">
+    <div class="sidebar-head">
+      <h2>Filters</h2>
+      <button class="sidebar-close-x" id="close-flt-btn" aria-label="Close filters">
+        <ion-icon name="close-outline"></ion-icon>
+      </button>
+    </div>
+
+    <form method="get" id="filter-form">
+
+      {% if styles %}
+      <div class="filter-section{% if selected_styles %} open{% endif %}">
+        <button type="button" class="filter-toggle" onclick="toggleFilter(this)">
+          <p class="filter-title">Style</p><span class="ftgl-icon">▼</span>
+        </button>
+        <div class="filter-body">
+          <ul class="fcl">
+            {% for style in styles %}
+            <li>
+              <label class="cat-label{% if style.id|stringformat:'s' in selected_styles %} is-checked{% endif %}">
+                <input type="checkbox" name="styles" value="{{ style.id }}"
+                  {% if style.id|stringformat:"s" in selected_styles %}checked{% endif %}>
+                <span class="chk-box"></span>
+                {% if style.icon %}<img src="{{ style.icon.url }}" alt="" class="cat-icon">{% endif %}
+                <span class="cat-name">{{ style.name }}</span>
+                <span class="cat-cnt">{{ style.product_count }}</span>
+              </label>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if brands %}
+      <div class="filter-section{% if selected_brands %} open{% endif %}">
+        <button type="button" class="filter-toggle" onclick="toggleFilter(this)">
+          <p class="filter-title">Brand</p><span class="ftgl-icon">▼</span>
+        </button>
+        <div class="filter-body">
+          <ul class="fcl">
+            {% for brand in brands %}
+            <li>
+              <label class="cat-label{% if brand.id|stringformat:'s' in selected_brands %} is-checked{% endif %}">
+                <input type="checkbox" name="brands" value="{{ brand.id }}"
+                  {% if brand.id|stringformat:"s" in selected_brands %}checked{% endif %}>
+                <span class="chk-box"></span>
+                <span class="cat-name">{{ brand.name }}</span>
+              </label>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if available_colors %}
+      <div class="filter-section{% if selected_colors %} open{% endif %}">
+        <button type="button" class="filter-toggle" onclick="toggleFilter(this)">
+          <p class="filter-title">Color</p><span class="ftgl-icon">▼</span>
+        </button>
+        <div class="filter-body">
+          <ul class="fcl">
+            {% for color in available_colors %}
+            <li>
+              <label class="cat-label{% if color.id|stringformat:'s' in selected_colors %} is-checked{% endif %}">
+                <input type="checkbox" name="colors" value="{{ color.id }}"
+                  {% if color.id|stringformat:"s" in selected_colors %}checked{% endif %}>
+                <span class="chk-box"></span>
+                {% if color.hex_code %}<span class="color-dot-f" style="background:{{ color.hex_code }};"></span>{% endif %}
+                <span class="cat-name">{{ color.name }}</span>
+              </label>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if materials %}
+      <div class="filter-section{% if selected_materials %} open{% endif %}">
+        <button type="button" class="filter-toggle" onclick="toggleFilter(this)">
+          <p class="filter-title">Material</p><span class="ftgl-icon">▼</span>
+        </button>
+        <div class="filter-body">
+          <ul class="fcl">
+            {% for material in materials %}
+            <li>
+              <label class="cat-label{% if material.id|stringformat:'s' in selected_materials %} is-checked{% endif %}">
+                <input type="checkbox" name="materials" value="{{ material.id }}"
+                  {% if material.id|stringformat:"s" in selected_materials %}checked{% endif %}>
+                <span class="chk-box"></span>
+                <span class="cat-name">{{ material.name }}</span>
+              </label>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if sizes %}
+      <div class="filter-section{% if selected_sizes %} open{% endif %}">
+        <button type="button" class="filter-toggle" onclick="toggleFilter(this)">
+          <p class="filter-title">Size</p><span class="ftgl-icon">▼</span>
+        </button>
+        <div class="filter-body">
+          <ul class="fcl">
+            {% for size in sizes %}
+            <li>
+              <label class="cat-label{% if size.id|stringformat:'s' in selected_sizes %} is-checked{% endif %}">
+                <input type="checkbox" name="sizes" value="{{ size.id }}"
+                  {% if size.id|stringformat:"s" in selected_sizes %}checked{% endif %}>
+                <span class="chk-box"></span>
+                <span class="cat-name">{{ size.value }} {{ size.unit }}</span>
+              </label>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="filter-section{% if request.GET.min_price or request.GET.max_price %} open{% endif %}">
+        <button type="button" class="filter-toggle" onclick="toggleFilter(this)">
+          <p class="filter-title">Price Range</p><span class="ftgl-icon">▼</span>
+        </button>
+        <div class="filter-body">
+          <div class="price-inps">
+            <input type="number" name="min_price" id="min-price"
+              value="{{ request.GET.min_price|default:price_range.min|default:0 }}"
+              min="{{ price_range.min|default:0 }}" max="{{ price_range.max|default:99999 }}">
+            <span>—</span>
+            <input type="number" name="max_price" id="max-price"
+              value="{{ request.GET.max_price|default:price_range.max|default:99999 }}"
+              min="{{ price_range.min|default:0 }}" max="{{ price_range.max|default:99999 }}">
+          </div>
+          <div class="slider-trk"><div class="progress"></div></div>
+          <div class="range-inps">
+            <input type="range" class="range-min"
+              min="{{ price_range.min|default:0 }}" max="{{ price_range.max|default:99999 }}"
+              value="{{ request.GET.min_price|default:price_range.min|default:0 }}">
+            <input type="range" class="range-max"
+              min="{{ price_range.min|default:0 }}" max="{{ price_range.max|default:99999 }}"
+              value="{{ request.GET.max_price|default:price_range.max|default:99999 }}">
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-section{% if request.GET.min_rating %} open{% endif %}">
+        <button type="button" class="filter-toggle" onclick="toggleFilter(this)">
+          <p class="filter-title">Min Rating</p><span class="ftgl-icon">▼</span>
+        </button>
+        <div class="filter-body">
+          <select name="min_rating" class="f-select">
+            <option value="">Any rating</option>
+            {% for i in "12345" %}
+            <option value="{{ i }}" {% if i == request.GET.min_rating %}selected{% endif %}>{{ i }} ★ &amp; up</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="filter-section{% if request.GET.availability %} open{% endif %}">
+        <button type="button" class="filter-toggle" onclick="toggleFilter(this)">
+          <p class="filter-title">Availability</p><span class="ftgl-icon">▼</span>
+        </button>
+        <div class="filter-body">
+          <select name="availability" class="f-select">
+            <option value="">All products</option>
+            <option value="in_stock"     {% if request.GET.availability == 'in_stock'     %}selected{% endif %}>In Stock</option>
+            <option value="out_of_stock" {% if request.GET.availability == 'out_of_stock' %}selected{% endif %}>Out of Stock</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="filter-btns">
+        <button type="submit" class="btn-f-apply">Apply Filters</button>
+        <button type="button" class="btn-f-reset" onclick="resetFilters()">Reset All</button>
+      </div>
+
+    </form>
+  </aside>
+
+  <!-- ══ MAIN ══ -->
+  <div class="hp-main">
+    <div class="hp-main-hdr">
+      <h2 class="hp-title">New Products</h2>
+      <span class="res-count">{{ enriched_products|length }} product{{ enriched_products|length|pluralize }}</span>
+    </div>
+
+    <!-- Active pills -->
+    {% if request.GET.styles or request.GET.brands or request.GET.colors or request.GET.materials or request.GET.sizes or request.GET.min_price or request.GET.max_price or request.GET.min_rating or request.GET.availability %}
+    <div class="active-pills">
+      {% if request.GET.availability %}<span class="pill">{{ request.GET.availability|title }} <a href="?">×</a></span>{% endif %}
+      {% if request.GET.min_rating %}<span class="pill">{{ request.GET.min_rating }}★+ <a href="?">×</a></span>{% endif %}
+      {% if request.GET.min_price or request.GET.max_price %}<span class="pill">Rs.{{ request.GET.min_price|default:0 }}–{{ request.GET.max_price|default:"∞" }} <a href="?">×</a></span>{% endif %}
+      {% for style in styles %}{% if style.id|stringformat:"s" in selected_styles %}<span class="pill">{{ style.name }} <a href="?">×</a></span>{% endif %}{% endfor %}
+      {% for brand in brands %}{% if brand.id|stringformat:"s" in selected_brands %}<span class="pill">{{ brand.name }} <a href="?">×</a></span>{% endif %}{% endfor %}
+      {% for color in available_colors %}{% if color.id|stringformat:"s" in selected_colors %}<span class="pill">{{ color.name }} <a href="?">×</a></span>{% endif %}{% endfor %}
+      {% for material in materials %}{% if material.id|stringformat:"s" in selected_materials %}<span class="pill">{{ material.name }} <a href="?">×</a></span>{% endif %}{% endfor %}
+      {% for size in sizes %}{% if size.id|stringformat:"s" in selected_sizes %}<span class="pill">{{ size.value }}{{ size.unit }} <a href="?">×</a></span>{% endif %}{% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="hp-grid">
+      {% for entry in enriched_products %}
+      {% with product=entry.product %}
+      <div class="showcase {% if entry.is_out_of_stock %}out-of-stock{% endif %}"
+           data-product-id="{{ product.id }}"
+           data-stock="{{ entry.display_stock }}"
+           data-default-color-id="{% if entry.display_color %}{{ entry.display_color.id }}{% endif %}">
+
+        <div class="showcase-banner">
+          <a href="{% url 'store:product' product.slug %}{% if entry.display_color %}?color={{ entry.display_color.id }}{% endif %}"
+             class="card-img-link" data-base-url="{% url 'store:product' product.slug %}">
+            <img class="card-main-img" src="{{ entry.display_image }}" alt="{{ product.name }}" loading="lazy" />
+          </a>
+          {% if entry.is_out_of_stock %}
+          <div class="oos-overlay"><span class="oos-badge">Out of Stock</span></div>
+          {% endif %}
+          {% if product.original_price and product.price < product.original_price %}
+          <p class="showcase-badge">Sale</p>
+          {% endif %}
+          <button class="btn-wl wishlist-btn {% if product.id in wishlist_product_ids %}in-wishlist{% endif %}"
+                  data-product-id="{{ product.id }}"
+                  data-url="{% url 'store:add_to_wishlist' product.id %}"
+                  title="{% if product.id in wishlist_product_ids %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}">
+            <ion-icon name="{% if product.id in wishlist_product_ids %}heart{% else %}heart-outline{% endif %}"></ion-icon>
+          </button>
+        </div>
+
+        <div class="showcase-content">
+          <span class="showcase-style">{{ product.style.name }}</span>
+          <a href="{% url 'store:product' product.slug %}{% if entry.display_color %}?color={{ entry.display_color.id }}{% endif %}"
+             class="card-title-link" data-base-url="{% url 'store:product' product.slug %}">
+            <h3 class="showcase-title">{{ product.name }}</h3>
+          </a>
+
+          {% if entry.all_colors %}
+          <div class="card-color-dots">
+            {% for cd in entry.all_colors %}
+            <span class="card-color-dot {% if entry.display_color and cd.color_id == entry.display_color.id %}active{% endif %}"
+                  title="{{ cd.color_name }}{% if not cd.in_stock %} (Out of Stock){% endif %}"
+                  data-color-id="{{ cd.color_id }}"
+                  data-img-url="{{ cd.img_url }}"
+                  data-in-stock="{{ cd.in_stock|yesno:'true,false' }}"
+                  data-best-size-id="{{ cd.best_size_id|default:'' }}"
+                  data-best-combo-stock="{{ cd.best_combo_stock|default:0 }}"
+                  style="background:{{ cd.hex_code }};{% if not cd.in_stock %}opacity:0.3;{% endif %}">
+            </span>
+            {% endfor %}
+            {% if entry.color_count > 5 %}
+            <span class="card-color-count">+{{ entry.color_count|add:"-5" }}</span>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          <div class="showcase-meta">
+            {% if product.brand %}<span class="meta-tag brand">{{ product.brand.name }}</span>{% endif %}
+            {% if product.material %}<span class="meta-tag material">{{ product.material.name }}</span>{% endif %}
+          </div>
+
+          <div class="showcase-rating">
+            {% with avg=product.avg_rating|default:0 %}
+            {% for i in "12345" %}
+            <ion-icon name="{% if forloop.counter <= avg %}star{% else %}star-outline{% endif %}"></ion-icon>
+            {% endfor %}
+            {% endwith %}
+            <p>({{ product.reviews.count }})</p>
+          </div>
+
+          <div class="price-box">
+            <p class="price">Rs.{{ product.price }}</p>
+            {% if product.original_price and product.price < product.original_price %}
+            <del>Rs.{{ product.original_price }}</del>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+      {% endwith %}
+      {% empty %}
+      <p style="color:#bbb;grid-column:1/-1;padding:60px 0;text-align:center;font-size:0.9rem;">
+        No products match your filters. <a href="?" style="color:#ff7d1a;font-weight:700;">Clear all</a>
+      </p>
+      {% endfor %}
+    </div>
+  </div><!-- /hp-main -->
+
+</div><!-- /hp-wrap -->
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  /* ── Mobile filter drawer ── */
+  var sidebar  = document.getElementById('hp-sidebar');
+  var overlay  = document.getElementById('flt-overlay');
+  var openBtn  = document.getElementById('open-flt-btn');
+  var closeBtn = document.getElementById('close-flt-btn');
+
+  function openFlt()  { sidebar.classList.add('open');  overlay.classList.add('open');  document.body.style.overflow = 'hidden'; }
+  function closeFlt() { sidebar.classList.remove('open'); overlay.classList.remove('open'); document.body.style.overflow = ''; }
+
+  if (openBtn)  openBtn.addEventListener('click', openFlt);
+  if (closeBtn) closeBtn.addEventListener('click', closeFlt);
+  if (overlay)  overlay.addEventListener('click', closeFlt);
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeFlt(); });
+
+  /* Active filter badge count */
+  var n = document.querySelectorAll('#filter-form input[type="checkbox"]:checked').length;
+  document.querySelectorAll('#filter-form select').forEach(function(s) { if (s.value) n++; });
+  var badge = document.getElementById('flt-badge');
+  if (badge && n > 0) { badge.textContent = n; badge.classList.add('on'); }
+
+  /* ── Checkbox visual state ── */
+  document.querySelectorAll('.cat-label input[type="checkbox"]').forEach(function (cb) {
+    var lbl = cb.closest('.cat-label');
+    if (cb.checked) lbl.classList.add('is-checked');
+    cb.addEventListener('change', function () { lbl.classList.toggle('is-checked', this.checked); });
+  });
+
+  /* ── Price range slider ── */
+  var rMin = document.querySelector('.range-min');
+  var rMax = document.querySelector('.range-max');
+  var iMin = document.querySelector('#min-price');
+  var iMax = document.querySelector('#max-price');
+  var prog = document.querySelector('.progress');
+  if (rMin && rMax && prog) {
+    function updProg() {
+      var lo = parseInt(rMin.value), hi = parseInt(rMax.value);
+      var lo0 = parseInt(rMin.min),  hi0 = parseInt(rMin.max);
+      if (lo > hi) { rMin.value = hi; return; }
+      var loPct = ((lo - lo0) / (hi0 - lo0)) * 100;
+      var hiPct = ((hi - lo0) / (hi0 - lo0)) * 100;
+      prog.style.left  = loPct + '%';
+      prog.style.right = (100 - hiPct) + '%';
+      if (iMin) iMin.value = lo;
+      if (iMax) iMax.value = hi;
+    }
+    rMin.addEventListener('input', updProg);
+    rMax.addEventListener('input', updProg);
+    if (iMin) iMin.addEventListener('change', function () { rMin.value = Math.min(parseInt(this.value)||0, parseInt(rMax.value)); updProg(); });
+    if (iMax) iMax.addEventListener('change', function () { rMax.value = Math.max(parseInt(this.value)||0, parseInt(rMin.value)); updProg(); });
+    updProg();
+  }
+
+  /* ── Color dot hover: swap image + update links ── */
+  document.querySelectorAll('.card-color-dot').forEach(function (dot) {
+    dot.addEventListener('mouseenter', function () {
+      var sc       = this.closest('.showcase');
+      var img      = sc.querySelector('.card-main-img');
+      var imgLink  = sc.querySelector('.card-img-link');
+      var ttlLink  = sc.querySelector('.card-title-link');
+      var imgUrl   = this.dataset.imgUrl;
+      var colorId  = this.dataset.colorId;
+      var baseUrl  = imgLink ? imgLink.dataset.baseUrl : '';
+      if (img && imgUrl) img.src = imgUrl;
+      if (imgLink && baseUrl) imgLink.href  = baseUrl + '?color=' + colorId;
+      if (ttlLink && baseUrl) ttlLink.href  = baseUrl + '?color=' + colorId;
+      sc.querySelectorAll('.card-color-dot').forEach(function(d) { d.classList.remove('active'); });
+      this.classList.add('active');
+    });
+  });
+
+  /* ── Init card links from active dot on page load ──
+     Ensures product links already carry the correct ?color= on first render
+     without needing a hover event first. ── */
+  document.querySelectorAll('.showcase').forEach(function (sc) {
+    var activeDot = sc.querySelector('.card-color-dot.active');
+    if (!activeDot) return;
+    var imgLink  = sc.querySelector('.card-img-link');
+    var ttlLink  = sc.querySelector('.card-title-link');
+    var baseUrl  = imgLink ? imgLink.dataset.baseUrl : '';
+    var colorId  = activeDot.dataset.colorId;
+    if (baseUrl && colorId) {
+      if (imgLink)  imgLink.href  = baseUrl + '?color=' + colorId;
+      if (ttlLink)  ttlLink.href  = baseUrl + '?color=' + colorId;
+    }
+  });
+
+  /* ── Wishlist AJAX ── */
+  var csrf = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+  document.querySelectorAll('.wishlist-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var self = this;
+      fetch(this.dataset.url, { method: 'POST', headers: { 'X-CSRFToken': csrf, 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function (d) {
+        var icon = self.querySelector('ion-icon');
+        if (d.status === 'added') {
+          self.classList.add('in-wishlist'); if (icon) icon.setAttribute('name','heart');
+          Swal.fire({ icon:'success', title:'Added to Wishlist!', text:d.message, confirmButtonColor:'#ff7d1a', timer:1800, timerProgressBar:true, showConfirmButton:false });
+        } else if (d.status === 'removed') {
+          self.classList.remove('in-wishlist'); if (icon) icon.setAttribute('name','heart-outline');
+          Swal.fire({ icon:'info', title:'Removed', text:d.message, confirmButtonColor:'#ff7d1a', timer:1500, timerProgressBar:true, showConfirmButton:false });
+        }
+        if (d.wishlist_count !== undefined) {
+          document.querySelectorAll('#wishlist-count, #wishlist-count-mobile').forEach(function(el) { el.textContent = d.wishlist_count; });
+        }
+      })
+      .catch(function() { Swal.fire({ icon:'error', title:'Network Error', confirmButtonColor:'#ff7d1a' }); });
+    });
+  });
+
+}); // end DOMContentLoaded
+
+/* ── Collapsible filters ── */
+window.toggleFilter = function (btn) {
+  btn.closest('.filter-section').classList.toggle('open');
+};
+
+/* ── Reset filters ── */
+function resetFilters() {
+  var form = document.getElementById('filter-form');
+  form.querySelectorAll('input[type="checkbox"]').forEach(function(i) { i.checked = false; });
+  form.querySelectorAll('select').forEach(function(s) { s.value = ''; });
+  var rMin = form.querySelector('.range-min'), rMax = form.querySelector('.range-max');
+  if (rMin) rMin.value = rMin.min;
+  if (rMax) rMax.value = rMax.max;
+  var iMin = form.querySelector('#min-price'), iMax = form.querySelector('#max-price');
+  if (iMin && rMin) iMin.value = rMin.min;
+  if (iMax && rMax) iMax.value = rMax.max;
+  form.submit();
+}
+</script>
+{% endblock %}
