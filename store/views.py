@@ -26,6 +26,16 @@ from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 import stripe
+from django.templatetags.static import static
+
+def get_image_url(image_field):
+    """Get the correct URL for an image - static or media"""
+    if image_field and str(image_field).startswith('images/products/'):
+        # This is a static file reference
+        return static(str(image_field))
+    else:
+        # This is a media file
+        return image_field.url if image_field else ''
 from .models import (
     ColorSizeStock, Product, ProductImage, Color, Offer, Style, Brand, Size, Material,
     VerificationCode, Wishlist, Order, OrderItem, Review, ContactMessage
@@ -240,7 +250,7 @@ def home(request):
             best_size = list(product.sizes.all())[0]
         
         # Display image for best color
-        display_image_url = product.image.url
+        display_image_url = get_image_url(product.image)
         if best_color:
             best_img = (
                 ProductImage.objects
@@ -251,7 +261,7 @@ def home(request):
                 .first()
             )
             if best_img:
-                display_image_url = best_img.image.url
+                display_image_url = get_image_url(best_img.image)
 
         # Color dot data — each dot carries its own best size+stock for JS
         all_colors_data = []
@@ -270,7 +280,7 @@ def home(request):
                 'color_id':         color.id,
                 'color_name':       color.name,
                 'hex_code':         color.hex_code or '#cccccc',
-                'img_url':          color_img.image.url if color_img else product.image.url,
+                'img_url':          get_image_url(color_img.image) if color_img else get_image_url(product.image),
                 'in_stock':         total_for_color > 0,
                 'best_size_id':     best_for_color.get('size_id', ''),
                 'best_combo_stock': best_for_color.get('stock', 0),
@@ -997,7 +1007,7 @@ def search_products(request):
                 'color_id':         color.id,
                 'color_name':       color.name,
                 'hex_code':         color.hex_code or '#cccccc',
-                'img_url':          color_img.image.url if color_img else product.image.url,
+                'img_url':          get_image_url(color_img.image) if color_img else get_image_url(product.image),
                 'in_stock':         total_for_color > 0,
                 'best_size_id':     best_for_color.get('size_id', ''),
                 'best_combo_stock': best_for_color.get('stock', 0),

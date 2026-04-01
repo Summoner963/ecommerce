@@ -9,7 +9,27 @@ django.setup()
 
 from django.core.files import File
 from django.utils.text import slugify
+from django.conf import settings
 from store.models import Color, Style, Brand, Size, Material, Product, ProductImage, ColorSizeStock
+
+# Import Cloudinary storage after Django setup
+try:
+    from cloudinary_storage.storage import MediaCloudinaryStorage
+    CLOUDINARY_AVAILABLE = True
+except ImportError:
+    CLOUDINARY_AVAILABLE = False
+
+# Check if using Cloudinary
+USE_CLOUDINARY = not settings.DEBUG and settings.CLOUDINARY_STORAGE.get('CLOUD_NAME') and CLOUDINARY_AVAILABLE
+
+if USE_CLOUDINARY:
+    storage = MediaCloudinaryStorage()
+else:
+    from django.core.files.storage import default_storage
+    storage = default_storage
+
+# For Render (production), use static file URLs instead of uploading
+USE_STATIC_URLS = not settings.DEBUG
 
 STATIC_PRODUCT_DIR = BASE_DIR / 'store' / 'static' / 'images' / 'products'
 
@@ -82,8 +102,15 @@ def create_product(product_def):
 
     # set main image
     main_image_path = product_def['main_image']
-    with open_image_file(main_image_path) as imgfile:
-        product.image = f"products/{os.path.basename(main_image_path)}"
+    if USE_STATIC_URLS:
+        # Use static file URL directly
+        from django.templatetags.static import static
+        product.image = f"images/products/{os.path.basename(main_image_path)}"
+    else:
+        # Upload to storage
+        with open_image_file(main_image_path) as imgfile:
+            filename = storage.save(f"products/{os.path.basename(main_image_path)}", File(imgfile))
+            product.image = filename
     product.save()
 
     # colors and sizes
@@ -105,17 +132,22 @@ def create_product(product_def):
         image_path = image_def['file']
 
         # copy and save image record
-        with open_image_file(image_path) as imgfile:
-            img_obj, img_created = ProductImage.objects.get_or_create(
-                product=product,
-                color=color,
-                view_type=view_type,
-                defaults={'is_default': is_default}
-            )
-            img_obj.is_default = is_default
-            if not img_obj.image:
-                img_obj.image = f"products/{os.path.basename(image_path)}"
-            img_obj.save()
+        img_obj, img_created = ProductImage.objects.get_or_create(
+            product=product,
+            color=color,
+            view_type=view_type,
+            defaults={'is_default': is_default}
+        )
+        img_obj.is_default = is_default
+        if USE_STATIC_URLS:
+            # Use static file URL directly
+            img_obj.image = f"images/products/{os.path.basename(image_path)}"
+        else:
+            # Upload to storage
+            with open_image_file(image_path) as imgfile:
+                filename = storage.save(f"products/{os.path.basename(image_path)}", File(imgfile))
+                img_obj.image = filename
+        img_obj.save()
 
     return product
 
