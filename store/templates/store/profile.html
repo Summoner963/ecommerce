@@ -252,53 +252,44 @@
           {% endif %}
         </div>
 
-        <!-- Contact info -->
         <!-- Contact info + edit form -->
-    <div class="p-card">
-        <div class="p-card-header">
+        <div class="p-card">
+          <div class="p-card-header">
             <ion-icon name="person-outline"></ion-icon>
             <h3>Account Info</h3>
-        </div>
-        <div class="info-row">
+          </div>
+          <div class="info-row">
             <div class="info-item">
-            <ion-icon name="mail-outline"></ion-icon>
-            <div class="info-item-content">
+              <ion-icon name="mail-outline"></ion-icon>
+              <div class="info-item-content">
                 <p class="info-label">Email</p>
                 <p class="info-value">{{ user.email }}</p>
+              </div>
             </div>
-            </div>
-        </div>
+          </div>
 
-        <!-- Editable form -->
-        <form method="post" action="{% url 'store:profile' %}" style="padding: 14px 20px; display:flex; flex-direction:column; gap:12px;">
+          <form method="post" action="{% url 'store:profile' %}" style="padding:14px 20px;display:flex;flex-direction:column;gap:12px;">
             {% csrf_token %}
-
             <div>
-            <label style="font-size:0.7rem;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">
-                Phone
-            </label>
-            <input type="text" name="phone" value="{{ user.phone }}"
-                    placeholder="Enter phone number"
-                    style="width:100%;padding:9px 12px;border:1.5px solid #eee;border-radius:8px;font-size:0.88rem;font-family:inherit;outline:none;transition:border-color 0.15s;"
-                    onfocus="this.style.borderColor='#ff7d1a'" onblur="this.style.borderColor='#eee'">
+              <label style="font-size:0.7rem;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">Phone</label>
+              <input type="text" name="phone" value="{{ user.phone }}"
+                     placeholder="Enter phone number"
+                     style="width:100%;padding:9px 12px;border:1.5px solid #eee;border-radius:8px;font-size:0.88rem;font-family:inherit;outline:none;transition:border-color 0.15s;"
+                     onfocus="this.style.borderColor='#ff7d1a'" onblur="this.style.borderColor='#eee'">
             </div>
-
             <div>
-            <label style="font-size:0.7rem;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">
-                Address
-            </label>
-            <textarea name="address" rows="3" placeholder="Enter delivery address"
+              <label style="font-size:0.7rem;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">Address</label>
+              <textarea name="address" rows="3" placeholder="Enter delivery address"
                         style="width:100%;padding:9px 12px;border:1.5px solid #eee;border-radius:8px;font-size:0.88rem;font-family:inherit;outline:none;resize:vertical;transition:border-color 0.15s;"
                         onfocus="this.style.borderColor='#ff7d1a'" onblur="this.style.borderColor='#eee'">{{ user.address }}</textarea>
             </div>
-
             <button type="submit"
                     style="align-self:flex-start;padding:9px 22px;background:#ff7d1a;color:#fff;border:none;border-radius:9px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.15s;"
                     onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">
-            Save Changes
+              Save Changes
             </button>
-        </form>
-    </div>
+          </form>
+        </div>
 
         <!-- Quick stats -->
         <div class="p-card">
@@ -316,24 +307,21 @@
               <span class="stat-label">Wishlist</span>
             </div>
             <div class="stat-item">
-                <span class="stat-num">{{ delivered_count|default:0 }}</span>
-                <span class="stat-label">Delivered</span>
-            </div>
-
-            <div class="stat-item">
-                <span class="stat-num">{{ pending_count|default:0 }}</span>
-                <span class="stat-label">Pending</span>
+              <span class="stat-num">{{ delivered_count|default:0 }}</span>
+              <span class="stat-label">Delivered</span>
             </div>
             <div class="stat-item">
-                <span class="stat-num">{{ shipping_count|default:0 }}</span>
-                <span class="stat-label">Shipping</span>
+              <span class="stat-num">{{ pending_count|default:0 }}</span>
+              <span class="stat-label">Pending</span>
             </div>
-
             <div class="stat-item">
-                <span class="stat-num">{{ canceled_count|default:0 }}</span>
-                <span class="stat-label">Cancelled</span>
+              <span class="stat-num">{{ shipping_count|default:0 }}</span>
+              <span class="stat-label">Shipping</span>
             </div>
-
+            <div class="stat-item">
+              <span class="stat-num">{{ canceled_count|default:0 }}</span>
+              <span class="stat-label">Cancelled</span>
+            </div>
           </div>
         </div>
 
@@ -358,7 +346,7 @@
                 <p class="order-row-date">{{ order.created_at|date:"M d, Y" }}</p>
                 <p class="order-row-total">Rs.{{ order.total_cost }}</p>
                 <p class="order-row-date" style="margin-top:2px;">
-                    {{ order.items.count }} item{{ order.items.count|pluralize }} · {{ order.payment_method|upper }}
+                  {{ order.items.count }} item{{ order.items.count|pluralize }} · {{ order.payment_method|upper }}
                 </p>
               </div>
               <span class="oh-status {% if order.status == 'P' %}pending{% elif order.status == 'S' %}shipped{% elif order.status == 'D' %}delivered{% elif order.status == 'C' %}cancelled{% endif %}">
@@ -389,33 +377,32 @@
             <ion-icon name="heart-outline"></ion-icon>
             <h3>Wishlist</h3>
           </div>
-          {% if wishlist and wishlist.products.count %}
+          {% if wishlist_products_enriched %}
           <div class="order-rows">
-            {% for product in wishlist.products.all|slice:":4" %}
+            {% for wp in wishlist_products_enriched|slice:":4" %}
             <div class="order-row">
-              <img src="{{ product.image.url }}" alt="{{ product.name }}"
+              <img src="{{ wp.image_url }}" alt="{{ wp.product.name }}"
                    style="width:44px;height:44px;object-fit:contain;border-radius:8px;background:#f7f7f7;padding:3px;flex-shrink:0;">
               <div class="order-row-meta">
-                    <p class="order-row-date">
-                    {{ product.style.name }}
-                    {% if product.brand %} · {{ product.brand.name }}{% endif %}
-                    </p>
-                    <!-- Colors preview dots -->
-                    {% if product.colors.exists %}
-                    <div style="display:flex;gap:3px;margin-top:3px;">
-                    {% for color in product.colors.all|slice:":4" %}
-                    <span style="width:9px;height:9px;border-radius:50%;background:{{ color.hex_code }};border:1px solid #ddd;display:inline-block;" title="{{ color.name }}"></span>
-                    {% endfor %}
-                    </div>
-                    {% endif %}
-                    <p class="order-row-total" style="font-size:0.88rem;">{{ product.name }}</p>
-                    <p class="order-row-date" style="margin-top:1px;">
-                    {% if product.material %}{{ product.material.name }}{% endif %}
-                    {% if product.sizes.exists %} · {{ product.sizes.first.value }}{{ product.sizes.first.unit }}{% endif %}
-                    </p>
+                <p class="order-row-date">
+                  {{ wp.product.style.name }}
+                  {% if wp.product.brand %} · {{ wp.product.brand.name }}{% endif %}
+                </p>
+                {% if wp.product.colors.exists %}
+                <div style="display:flex;gap:3px;margin-top:3px;">
+                  {% for color in wp.product.colors.all|slice:":4" %}
+                  <span style="width:9px;height:9px;border-radius:50%;background:{{ color.hex_code }};border:1px solid #ddd;display:inline-block;" title="{{ color.name }}"></span>
+                  {% endfor %}
+                </div>
+                {% endif %}
+                <p class="order-row-total" style="font-size:0.88rem;">{{ wp.product.name }}</p>
+                <p class="order-row-date" style="margin-top:1px;">
+                  {% if wp.product.material %}{{ wp.product.material.name }}{% endif %}
+                  {% if wp.product.sizes.exists %} · {{ wp.product.sizes.first.value }}{{ wp.product.sizes.first.unit }}{% endif %}
+                </p>
               </div>
-              <span style="font-size:0.9rem;font-weight:800;color:var(--text-dark);white-space:nowrap;">Rs.{{ product.price }}</span>
-              <a href="{% url 'store:product' product.slug %}" class="order-row-link">
+              <span style="font-size:0.9rem;font-weight:800;color:var(--text-dark);white-space:nowrap;">Rs.{{ wp.product.price }}</span>
+              <a href="{% url 'store:product' wp.product.slug %}" class="order-row-link">
                 View <ion-icon name="arrow-forward-outline"></ion-icon>
               </a>
             </div>

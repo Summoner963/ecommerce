@@ -226,104 +226,72 @@
         <p class="oh-eyebrow">Your purchases</p>
         <h2 class="oh-title">Order History</h2>
       </div>
-      {% if orders %}
-      <span class="oh-count-badge"
-        >{{ orders|length }} order{{ orders|length|pluralize }}</span
-      >
+      {% if enriched_orders %}
+      <span class="oh-count-badge">{{ enriched_orders|length }} order{{ enriched_orders|length|pluralize }}</span>
       {% endif %}
     </div>
 
-    {% if orders %}
+    {% if enriched_orders %}
     <div class="oh-list">
-      {% for order in orders %}
+      {% for eo in enriched_orders %}
       <div class="oh-card">
+
         <!-- Card header -->
         <div class="oh-card-header">
           <div>
-            <p class="oh-order-id">Order <span>#{{ order.id }}</span></p>
-            <p class="oh-order-date">
-              {{ order.created_at|date:"M d, Y · g:i A" }}
-            </p>
+            <p class="oh-order-id">Order <span>#{{ eo.order.id }}</span></p>
+            <p class="oh-order-date">{{ eo.order.created_at|date:"M d, Y · g:i A" }}</p>
           </div>
-          <div
-            style="
-              display: flex;
-              gap: 8px;
-              align-items: center;
-              flex-wrap: wrap;
-            "
-          >
-            <span class="oh-payment">{{ order.payment_method }}</span>
-            <span
-              class="oh-status {% if order.status == 'P' %}pending{% elif order.status == 'S' %}shipped{% elif order.status == 'D' %}delivered{% elif order.status == 'C' %}cancelled{% endif %}"
-            >
-              {{ order.get_status_display }}
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <span class="oh-payment">{{ eo.order.payment_method }}</span>
+            <span class="oh-status {% if eo.order.status == 'P' %}pending{% elif eo.order.status == 'S' %}shipped{% elif eo.order.status == 'D' %}delivered{% elif eo.order.status == 'C' %}cancelled{% endif %}">
+              {{ eo.order.get_status_display }}
             </span>
           </div>
         </div>
 
         <!-- Items -->
         <div class="oh-items">
-          {% for item in order.items.all %}
+          {% for ei in eo.items %}
           <div class="oh-item">
-            <!-- Use color's front image if available, else product default -->
-            {% with front_img=item.product.images.filter %}
-            {% load store_extras %}
-                {% get_item_image item as item_img_url %}
-                <img src="{{ item_img_url }}" alt="{{ item.product.name }}" class="oh-item-img" />
-            {% endwith %}
+            <img src="{{ ei.image_url }}" alt="{{ ei.item.product.name }}" class="oh-item-img" />
             <div class="oh-item-info">
-                <p class="oh-item-name">{{ item.product.name }}</p>
-                <p class="oh-item-meta">
-                Qty: {{ item.quantity }}
-                {% if item.color %}
-                    · <span style="display:inline-flex;align-items:center;gap:4px;vertical-align:middle;">
-                        {% if item.color.hex_code %}
-                        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{{ item.color.hex_code }};border:1px solid #ddd;"></span>
-                        {% endif %}
-                        {{ item.color.name }}
+              <p class="oh-item-name">{{ ei.item.product.name }}</p>
+              <p class="oh-item-meta">
+                Qty: {{ ei.item.quantity }}
+                {% if ei.item.color %}
+                  · <span style="display:inline-flex;align-items:center;gap:4px;vertical-align:middle;">
+                      {% if ei.item.color.hex_code %}
+                      <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{{ ei.item.color.hex_code }};border:1px solid #ddd;"></span>
+                      {% endif %}
+                      {{ ei.item.color.name }}
                     </span>
                 {% endif %}
-                {% if item.size %}· {{ item.size.value }} {{ item.size.unit }}{% endif %}
-                {% if item.product.brand %}· {{ item.product.brand.name }}{% endif %}
-                {% if item.product.material %}· {{ item.product.material.name }}{% endif %}
-                </p>
+                {% if ei.item.size %}· {{ ei.item.size.value }} {{ ei.item.size.unit }}{% endif %}
+                {% if ei.item.product.brand %}· {{ ei.item.product.brand.name }}{% endif %}
+                {% if ei.item.product.material %}· {{ ei.item.product.material.name }}{% endif %}
+              </p>
             </div>
-            {% if order.status == 'D' %}
-          <div style="display: flex; gap: 8px; flex-wrap: wrap">
-            <a
-              href="{% url 'store:add_review' item.product.slug %}"
-              style="
-                display: inline-flex;
-                align-items: center;
-                gap: 5px;
-                font-size: 0.75rem;
-                font-weight: 700;
-                color: #fff;
-                background: #ff7d1a;
-                padding: 6px 12px;
-                border-radius: 8px;
-                text-decoration: none;
-                transition: opacity 0.15s;
-              "
-              onmouseover="this.style.opacity = '0.85'"
-              onmouseout="this.style.opacity = '1'"
-            >
-              ★ Review {{ item.product.name|truncatechars:18 }}
-            </a>
-            
+            {% if eo.order.status == 'D' %}
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <a href="{% url 'store:add_review' ei.item.product.slug %}"
+                 style="display:inline-flex;align-items:center;gap:5px;font-size:0.75rem;font-weight:700;color:#fff;background:#ff7d1a;padding:6px 12px;border-radius:8px;text-decoration:none;transition:opacity 0.15s;"
+                 onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                ★ Review {{ ei.item.product.name|truncatechars:18 }}
+              </a>
+            </div>
+            {% endif %}
+            <span class="oh-item-price">Rs.{{ ei.item.product.price }}</span>
           </div>
-          {% endif %}
-            <span class="oh-item-price">Rs.{{ item.product.price }}</span>
-            </div>
           {% endfor %}
         </div>
 
         <!-- Footer -->
         <div class="oh-card-footer">
           <span class="oh-total-label">Order Total</span>
-          <span class="oh-total-amount">Rs.{{ order.total_cost }}</span>
+          <span class="oh-total-amount">Rs.{{ eo.order.total_cost }}</span>
         </div>
+
       </div>
       {% endfor %}
     </div>
@@ -332,15 +300,13 @@
     <div class="oh-empty">
       <div class="oh-empty-icon"><ion-icon name="bag-outline"></ion-icon></div>
       <h2>No orders yet</h2>
-      <p>
-        Looks like you haven't placed any orders. Start shopping to see them
-        here.
-      </p>
+      <p>Looks like you haven't placed any orders. Start shopping to see them here.</p>
       <a href="{% url 'store:home' %}" class="btn-shop">
         <ion-icon name="storefront-outline"></ion-icon> Browse Products
       </a>
     </div>
     {% endif %}
+
   </div>
 </div>
 {% endblock %}

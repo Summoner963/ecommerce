@@ -267,58 +267,33 @@
 
     {% if wishlist_products %}
     <div class="wishlist-grid" id="wishlist-grid">
-      {% for product in wishlist_products %}
+      {% for wp in wishlist_products %}
 
-      <div class="wishlist-card" data-product-id="{{ product.id }}">
+      <div class="wishlist-card" data-product-id="{{ wp.product.id }}">
 
         <!-- Corner remove (always visible) -->
         <button class="remove-btn-corner remove-from-wishlist"
-                data-product-id="{{ product.id }}"
+                data-product-id="{{ wp.product.id }}"
                 title="Remove from wishlist">×</button>
 
         <!-- Image + overlay -->
         <div class="wishlist-card-image">
-          <a href="{% url 'store:product' product.slug %}">
-            <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+          <a href="{% url 'store:product' wp.product.slug %}">
+            <img src="{{ wp.image_url }}" alt="{{ wp.product.name }}" loading="lazy">
           </a>
-
-          <!-- Overlay with Add to Cart + Remove -->
-          {% comment %} <div class="wishlist-card-overlay">
-            <button class="overlay-btn add-to-cart"
-                    data-product-id="{{ product.id }}"
-                    data-url="{% url 'store:add_to_cart' product.id %}">
-              Add to Cart
-            </button>
-            <button class="overlay-btn remove-from-wishlist"
-                    data-product-id="{{ product.id }}"
-                    title="Remove from wishlist">♡</button>
-          </div> {% endcomment %}
         </div>
 
         <!-- Details -->
         <div class="wishlist-card-details">
-          <p class="wishlist-card-style">{{ product.style.name }}</p>
+          <p class="wishlist-card-style">{{ wp.product.style.name }}</p>
           <h3 class="wishlist-card-name">
-            <a href="{% url 'store:product' product.slug %}">{{ product.name }}</a>
+            <a href="{% url 'store:product' wp.product.slug %}">{{ wp.product.name }}</a>
           </h3>
-{% comment %} 
-          {% with avg=product.avg_rating|default:0 %}
-          {% if product.reviews.count %}
-          <div class="wishlist-card-rating">
-            {% for i in "12345" %}
-            <ion-icon name="{% if forloop.counter <= avg %}star{% else %}star-outline{% endif %}"></ion-icon>
-            {% endfor %}
-            <span>({{ product.reviews.count }})</span>
-          </div>
-          {% endif %}
-          {% endwith %} {% endcomment %}
 
           <div class="wishlist-card-price">
-            <span class="price-current">Rs.{{ product.price }}</span>
-            {% if product.original_price and product.price < product.original_price %}
-            <span class="price-original">Rs.{{ product.original_price }}</span>
-            {% with diff=product.original_price|add:"-0" %}
-            {% endwith %}
+            <span class="price-current">Rs.{{ wp.product.price }}</span>
+            {% if wp.product.original_price and wp.product.price < wp.product.original_price %}
+            <span class="price-original">Rs.{{ wp.product.original_price }}</span>
             {% endif %}
           </div>
         </div>

@@ -3,7 +3,6 @@
 import base64
 import hashlib
 import hmac
-from itertools import product
 import json
 import logging
 import random
@@ -825,21 +824,24 @@ def cancel_view(request):
     return render(request, 'store/cancel.html')
 
 def view_wishlist(request):
-    """Displays the wishlist for logged-in or non-logged-in users."""
     context = {}
-    
-    if request.user.is_authenticated:
-        # Ensure `request.user` is a valid `User` instance
-        wishlist, created = Wishlist.objects.get_or_create(user=request.user)
-        context['wishlist_products'] = wishlist.products.all()
-    else:
-        # Fetch wishlist data from session
-        wishlist_product_ids = request.session.get('wishlist', [])
-        context['wishlist_products'] = Product.objects.filter(id__in=wishlist_product_ids)
 
-    # Add additional context for rendering
+    if request.user.is_authenticated:
+        wishlist, created = Wishlist.objects.get_or_create(user=request.user)
+        raw_products = wishlist.products.all()
+    else:
+        wishlist_product_ids = request.session.get('wishlist', [])
+        raw_products = Product.objects.filter(id__in=wishlist_product_ids)
+
+    context['wishlist_products'] = [
+        {
+            'product': p,
+            'image_url': get_image_url(p.image),
+        }
+        for p in raw_products
+    ]
     context['wishlist_count'] = len(context['wishlist_products'])
-    
+
     return render(request, 'store/wishlist.html', context)
 
 # ─────────────────────────────────────────────────────────
@@ -1076,10 +1078,36 @@ def user_logout(request):
     return redirect('store:home')
 
 
+
 @login_required
 def order_history(request):
-    orders = Order.objects.filter(user=request.user, completed=True).order_by('-created_at').prefetch_related('items__product', 'items__color', 'items__size')
-    return render(request, 'store/order_history.html', {'orders': orders})
+    orders = Order.objects.filter(
+        user=request.user, completed=True
+    ).order_by('-created_at').prefetch_related('items__product', 'items__color', 'items__size')
+
+    enriched_orders = []
+    for order in orders:
+        enriched_items = []
+        for item in order.items.all():
+            image_url = get_image_url(item.product.image)
+            if item.color:
+                color_image = (
+                    item.product.images.filter(color=item.color, view_type='front').first()
+                    or item.product.images.filter(color=item.color).first()
+                )
+                if color_image:
+                    image_url = get_image_url(color_image.image)
+            enriched_items.append({
+                'item': item,
+                'image_url': image_url,
+                'size_label': f"{item.size.value} {item.size.unit}" if item.size else None,
+            })
+        enriched_orders.append({
+            'order': order,
+            'items': enriched_items,
+        })
+
+    return render(request, 'store/order_history.html', {'enriched_orders': enriched_orders})
 
 @login_required
 def user_profile(request):
@@ -1094,16 +1122,26 @@ def user_profile(request):
 
     orders = Order.objects.filter(user=request.user, completed=True).order_by('-created_at')
     wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
-    return render(request, 'store/profile.html', {
-        'orders':          orders,
-        'wishlist':        wishlist,
-        'pending_count':   orders.filter(status='P').count(),
-        'delivered_count': orders.filter(status='D').count(),
-        'shipping_count':  orders.filter(status='S').count(),
-        'canceled_count':  orders.filter(status='C').count(),
-        'user':            request.user,
-    })
+    
+    wishlist_products_enriched = [
+        {
+            'product': p,
+            'image_url': get_image_url(p.image),
+        }
+        for p in wishlist.products.all()
+    ]
 
+    return render(request, 'store/profile.html', {
+        'orders':                    orders,
+        'wishlist':                  wishlist,
+        'wishlist_products_enriched': wishlist_products_enriched,
+        'pending_count':             orders.filter(status='P').count(),
+        'delivered_count':           orders.filter(status='D').count(),
+        'shipping_count':            orders.filter(status='S').count(),
+        'canceled_count':            orders.filter(status='C').count(),
+        'user':                      request.user,
+    })
+    
 @staff_member_required
 def orders_by_email(request):
     query = request.GET.get('email')
