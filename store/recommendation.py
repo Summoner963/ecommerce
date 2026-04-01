@@ -14,47 +14,69 @@ def get_recommendations(product, n=4):
     """
     Return up to `n` products similar to `product` based on
     name + description TF-IDF cosine similarity.
-    Falls back to same-style products if sklearn fails.
+    Falls back to sample same-style products if sklearn is unavailable or fails.
     """
-    try:
-        from .models import Product
+    from .models import Product
 
-        # Fetch all active products
-        all_products = list(Product.objects.filter(is_active=True))
+    product = Product.objects.filter(id=product.id).first()
+    if not product or n <= 0:
+        return []
 
-        if len(all_products) < 2:
-            return []
+    all_products = list(Product.objects.filter(is_active=True))
+    if len(all_products) <= 1:
+        return []
 
-        # Build corpus: combine name + description for each product
-        corpus = [f"{p.name} {p.description}" for p in all_products]
+    # fallback function if we hit errors with sklearn
+    def name_similarity_fallback():
+        candidates = list(
+            Product.objects.filter(is_active=True)
+            .exclude(id=product.id)
+        )
+        # quick name similarity by shared tokens
+        target_tokens = set(product.name.lower().split())
 
-        # Build TF-IDF matrix
-        vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2))
-        tfidf_matrix = vectorizer.fit_transform(corpus)
+        def similarity_score(c):
+            other_tokens = set(c.name.lower().split())
+            common = target_tokens & other_tokens
+            return len(common)
 
-        # Find the index of the current product
-        product_ids = [p.id for p in all_products]
-        if product.id not in product_ids:
-            return []
+        candidates.sort(key=similarity_score, reverse=True)
+        if candidates:
+            return candidates[:n]
 
-        idx = product_ids.index(product.id)
-
-        # Compute cosine similarity between current product and all others
-        cosine_scores = cosine_similarity(tfidf_matrix[idx], tfidf_matrix).flatten()
-
-        # Get indices sorted by similarity descending, exclude self
-        similar_indices = [
-            i for i in cosine_scores.argsort()[::-1]
-            if i != idx
-        ]
-
-        # Return top-n as Product objects
-        return [all_products[i] for i in similar_indices[:n]]
-
-    except Exception as e:
-        logger.warning(f"Recommendation engine failed, falling back: {e}")
-        from .models import Product
+        # last resort style-based fallback
         return list(
             Product.objects.filter(style=product.style, is_active=True)
             .exclude(id=product.id)[:n]
         )
+
+    try:
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        from sklearn.metrics.pairwise import cosine_similarity
+    except ImportError as e:
+        logger.warning(f"sklearn missing ({e}), using name similarity fallback")
+        return name_similarity_fallback()
+
+    try:
+        corpus = [f"{p.name} {p.description}" for p in all_products]
+        vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2))
+        tfidf_matrix = vectorizer.fit_transform(corpus)
+
+        product_ids = [p.id for p in all_products]
+        if product.id not in product_ids:
+            return style_fallback()
+
+        idx = product_ids.index(product.id)
+        cosine_scores = cosine_similarity(tfidf_matrix[idx], tfidf_matrix).flatten()
+
+        similar_indices = [i for i in cosine_scores.argsort()[::-1] if i != idx]
+        recommended = [all_products[i] for i in similar_indices[:n]]
+
+        if not recommended:
+            return style_fallback()
+
+        return recommended
+
+    except Exception as e:
+        logger.warning(f"Recommendation engine TF-IDF failed, falling back: {e}")
+        return style_fallback()
