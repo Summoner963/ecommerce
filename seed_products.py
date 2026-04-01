@@ -12,27 +12,14 @@ from django.utils.text import slugify
 from store.models import Color, Style, Brand, Size, Material, Product, ProductImage, ColorSizeStock
 
 STATIC_PRODUCT_DIR = BASE_DIR / 'store' / 'static' / 'images' / 'products'
-MEDIA_PRODUCT_DIR = BASE_DIR / 'media' / 'products'
-MEDIA_PRODUCT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Helper functions
 
-def copy_image_to_media(src_path):
-    src = STATIC_PRODUCT_DIR / src_path
+def open_image_file(relative_path):
+    src = STATIC_PRODUCT_DIR / relative_path
     if not src.exists():
         raise FileNotFoundError(f"Image not found: {src}")
-    dst_name = os.path.basename(src_path)
-    dst = MEDIA_PRODUCT_DIR / dst_name
-    if not dst.exists():
-        with open(src, 'rb') as fsrc:
-            with open(dst, 'wb') as fdst:
-                fdst.write(fsrc.read())
-    return dst
-
-
-def open_image_file(relative_path):
-    file_path = copy_image_to_media(relative_path)
-    return open(file_path, 'rb')
+    return open(src, 'rb')
 
 
 def get_or_create_color(name, hex_code=None):
@@ -96,8 +83,7 @@ def create_product(product_def):
     # set main image
     main_image_path = product_def['main_image']
     with open_image_file(main_image_path) as imgfile:
-        product.image.save(os.path.basename(main_image_path), File(imgfile), save=False)
-
+        product.image = f"products/{os.path.basename(main_image_path)}"
     product.save()
 
     # colors and sizes
@@ -128,7 +114,7 @@ def create_product(product_def):
             )
             img_obj.is_default = is_default
             if not img_obj.image:
-                img_obj.image.save(os.path.basename(image_path), File(imgfile), save=False)
+                img_obj.image = f"products/{os.path.basename(image_path)}"
             img_obj.save()
 
     return product
