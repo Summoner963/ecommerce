@@ -3,6 +3,7 @@
 import base64
 import hashlib
 import hmac
+from itertools import product
 import json
 import logging
 import random
@@ -383,8 +384,15 @@ def product_detail(request, slug):
     if default_size is None and sizes:
         default_size = sizes[0]
 
-    images_by_color = {
+    images_by_color_raw = {
         c.name: list(c.images.filter(product=product)) for c in colors
+    }
+    images_by_color = {
+        color_name: [
+            {'url': get_image_url(img.image), 'alt': product.name}
+            for img in imgs
+        ]
+        for color_name, imgs in images_by_color_raw.items()
     }
     default_color_images = images_by_color.get(default_color.name, []) if default_color else []
 
@@ -398,7 +406,14 @@ def product_detail(request, slug):
     if default_color and default_size:
         initial_combo_stock = stock_map.get((default_color.id, default_size.id), 0)
 
-    recommendations = get_recommendations(product, n=4)
+    raw_recommendations = get_recommendations(product, n=4)
+    recommendations = [
+        {
+            'product': rec,
+            'image_url': get_image_url(rec.image),
+        }
+        for rec in raw_recommendations
+    ]    
     discount_percentage = (
         round((product.original_price - product.price) / product.original_price * 100, 2)
         if product.original_price and product.price else None
@@ -435,6 +450,7 @@ def product_detail(request, slug):
         'default_size':         default_size,
         'default_color_images': default_color_images,
         'images_by_color':      images_by_color,
+        'product_image_url': get_image_url(product.image),
         'recommendations':      recommendations,
         'discount_percentage':  discount_percentage,
         'can_review':           can_review,
@@ -457,11 +473,10 @@ def get_color_images(request, product_id):
         product_images = product.images.all()
 
     image_data = [
-        {'url': request.build_absolute_uri(img.image.url)}
+        {'url': get_image_url(img.image)}  # ← fixed line
         for img in product_images
     ]
     return JsonResponse({'images': image_data})
-
 
 def product_list(request):
     products         = Product.objects.filter(is_active=True).annotate(avg_rating=Avg('reviews__rating'))
@@ -649,14 +664,14 @@ def view_cart(request):
         order = Order.objects.get(user=request.user, completed=False)
         order_items = []
         for item in order.items.select_related('product', 'color', 'size').all():
-            image_url = item.product.image.url
+            image_url = get_image_url(item.product.image)
             if item.color:
                 color_image = (
                     item.product.images.filter(color=item.color, view_type='front').first()
                     or item.product.images.filter(color=item.color).first()
                 )
                 if color_image:
-                    image_url = color_image.image.url
+                    image_url = get_image_url(color_image.image)
 
             # Build query string for update_cart URLs so each combo is targeted correctly
             combo_params = []
@@ -978,7 +993,7 @@ def search_products(request):
         if best_size is None and list(product.sizes.all()):
             best_size = list(product.sizes.all())[0]
 
-        display_image_url = product.image.url
+        display_image_url = get_image_url(product.image)
         if best_color:
             best_img = (
                 ProductImage.objects
@@ -989,7 +1004,7 @@ def search_products(request):
                 .first()
             )
             if best_img:
-                display_image_url = best_img.image.url
+                display_image_url = get_image_url(best_img.image)
 
         all_colors_data = []
         for color in all_product_colors:

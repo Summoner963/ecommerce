@@ -5,6 +5,7 @@ from .models import (
     Product, ProductImage, Color, Size, Style, Brand, Material,
     Order, OrderItem, Review, Wishlist, Offer
 )
+from .views import get_image_url
 
 
 class ColorSerializer(serializers.ModelSerializer):

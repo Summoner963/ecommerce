@@ -231,32 +231,34 @@
 {% block content %}
 <div class="pd-container">
 
-  <!-- ══ Gallery ══ -->
-  <div class="gallery-section">
-    <div class="main-image-wrap">
-      {% if default_color_images %}
-        <img id="main-product-img" src="{{ default_color_images.0.image.url }}" alt="{{ product.name }}" title="Click to enlarge" />
-      {% else %}
-        <img id="main-product-img" src="{{ product.image.url }}" alt="{{ product.name }}" title="Click to enlarge" />
-      {% endif %}
+    <!-- ══ Gallery ══ -->
+    <div class="gallery-section">
+      <div class="main-image-wrap">
+        {% if default_color_images %}
+          <img id="main-product-img" src="{{ default_color_images.0.url }}" alt="{{ product.name }}" title="Click to enlarge" />
+        {% else %}
+          <img id="main-product-img" src="{{ product_image_url }}" alt="{{ product.name }}" title="Click to enlarge" />
+        {% endif %}
+      </div>
+
+      <div class="thumbnail-strip" id="thumb-strip">
+        {% if default_color_images %}
+          {% for img in default_color_images %}
+          <div class="thumb {% if forloop.first %}active{% endif %}"
+              data-full="{{ img.url }}"
+              onclick="switchImage('{{ img.url }}', this)">
+            <img src="{{ img.url }}" alt="{{ product.name }}" />
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="thumb active"
+              data-full="{{ product_image_url }}"
+              onclick="switchImage('{{ product_image_url }}', this)">
+            <img src="{{ product_image_url }}" alt="{{ product.name }}" />
+          </div>
+        {% endif %}
+      </div>
     </div>
-    <div class="thumbnail-strip" id="thumb-strip">
-      {% if default_color_images %}
-        {% for img in default_color_images %}
-        <div class="thumb {% if forloop.first %}active{% endif %}"
-             data-full="{{ img.image.url }}"
-             onclick="switchImage('{{ img.image.url }}', this)">
-          <img src="{{ img.image.url }}" alt="{{ product.name }}" />
-        </div>
-        {% endfor %}
-      {% else %}
-        <div class="thumb active" data-full="{{ product.image.url }}"
-             onclick="switchImage('{{ product.image.url }}', this)">
-          <img src="{{ product.image.url }}" alt="{{ product.name }}" />
-        </div>
-      {% endif %}
-    </div>
-  </div>
 
   <!-- ══ Info Panel ══ -->
   <div class="pd-info">
@@ -441,13 +443,13 @@
   <h2>You May Also Like</h2>
   <div class="rec-grid">
     {% for rec in recommendations %}
-    <a href="{% url 'store:product' rec.slug %}" class="rec-card">
-      <img src="{{ rec.image.url }}" alt="{{ rec.name }}" class="rec-card-img" />
-      <div class="rec-card-info">
-        <div class="rec-card-name">{{ rec.name }}</div>
-        <div class="rec-card-price">Rs.{{ rec.price }}</div>
-      </div>
-    </a>
+      <a href="{% url 'store:product' rec.product.slug %}" class="rec-card">
+        <img src="{{ rec.image_url }}" alt="{{ rec.product.name }}" class="rec-card-img" />
+        <div class="rec-card-info">
+          <div class="rec-card-name">{{ rec.product.name }}</div>
+          <div class="rec-card-price">Rs.{{ rec.product.price }}</div>
+        </div>
+      </a>
     {% endfor %}
   </div>
 </section>
